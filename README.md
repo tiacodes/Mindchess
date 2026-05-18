@@ -19,6 +19,8 @@ Every chess platform on the market measures the same thing — rating, win rate,
 - **Resilience** — how do you play the move *after* a blunder?
 - **Focus** — how consistent is the quality of your decisions across a game?
 
+  MindChess is chess as practice for emotional control. Every chess platform measures how good you are — MindChess measures who you become when the position turns against you. We track composure, patience, resilience, and focus through a real-time "Pulse" meter, then an AI coach reads the emotional shape of each game. Built for founders, traders, and anyone training high-stakes decision-making — not for grandmasters.
+
 These four numbers tell you something rating never could: who you are when the position turns against you. And they translate. The person who tilts after a blunder on move 24 is often the same person who tilts after a hard email at 4pm.
 
 **MindChess is chess as a mirror for high-stakes thinking.**
