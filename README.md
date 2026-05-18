@@ -178,6 +178,4 @@ This isn't a course exercise pretending to be a startup. It's an MVP for a real 
 
 ---
 
-## License
 
-MIT.
