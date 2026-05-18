@@ -1,0 +1,4117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="MindChess — chess as practice for strategic thinking and emotional control. Track your composure, not just your rating." />
+<title>MindChess — Chess as Practice</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+
+
+<style>
+  :root {
+    --cream: #F0EAD6;
+    --paper: #FAF5E8;
+    --ink: #1A1E1C;
+    --ink-soft: #2A302C;
+    --moss: #4A5D4F;
+    --moss-deep: #3A4A3F;
+    --clay: #B7553E;
+    --clay-soft: #C97759;
+    --gold: #C9A85C;
+    --gold-soft: #E0C68A;
+    --muted: #8A8276;
+    --muted-light: #C9C2B0;
+    --light-sq: #F0EAD6;
+    --dark-sq: #8FA08A;
+    --highlight: rgba(201, 168, 92, 0.45);
+    --last-move: rgba(183, 85, 62, 0.25);
+    --check: rgba(183, 85, 62, 0.55);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Geist', -apple-system, sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(74, 93, 79, 0.06) 0%, transparent 50%),
+      radial-gradient(circle at 85% 80%, rgba(183, 85, 62, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 1;
+    mix-blend-mode: multiply;
+  }
+
+  /* Typography */
+  .display { font-family: 'Fraunces', serif; font-variation-settings: 'opsz' 144; }
+  .display-italic { font-family: 'Fraunces', serif; font-style: italic; font-variation-settings: 'opsz' 144; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .label {
+    font-family: 'Geist', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  /* Layout */
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 2.5rem;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(26, 30, 28, 0.1);
+    margin-bottom: 2.5rem;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+  }
+  .brand-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .brand-logo em {
+    font-style: italic;
+    color: var(--clay);
+  }
+  .brand-mark {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, var(--gold-soft), var(--clay) 70%);
+    box-shadow: inset -2px -2px 6px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+  }
+  .tagline {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+  nav { display: flex; gap: 2rem; }
+  nav button {
+    background: none;
+    border: none;
+    font-family: 'Geist', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  nav button:hover { color: var(--clay); border-bottom-color: var(--clay); }
+  nav button.active { color: var(--clay); border-bottom-color: var(--clay); }
+
+  /* Main grid */
+  .main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .board-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .intention-banner {
+    width: 100%;
+    max-width: 640px;
+    padding: 1rem 1.5rem;
+    background: rgba(74, 93, 79, 0.08);
+    border-left: 3px solid var(--moss);
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--moss-deep);
+    font-size: 0.95rem;
+  }
+  .intention-banner .change {
+    font-family: 'Geist', sans-serif;
+    font-style: normal;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--moss);
+    cursor: pointer;
+    background: none;
+    border: none;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 2px;
+  }
+
+  /* Board */
+  .board-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .board-files, .board-ranks {
+    display: flex;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+  }
+  .board-files {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+    padding: 0.4rem 0 0 0;
+  }
+  .board-ranks {
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-around;
+    padding: 0 0.4rem 0 0;
+  }
+
+  .board-and-coords { display: flex; flex-direction: column; }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 640px;
+    height: 640px;
+    border: 1px solid var(--ink);
+    box-shadow:
+      0 30px 60px -20px rgba(26, 30, 28, 0.35),
+      0 10px 25px -10px rgba(26, 30, 28, 0.2);
+    position: relative;
+  }
+
+  .square {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .square.light { background: var(--light-sq); }
+  .square.dark { background: var(--dark-sq); }
+  .square.selected::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--highlight);
+    pointer-events: none;
+  }
+  .square.last-move::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--last-move);
+    pointer-events: none;
+  }
+  .square.check::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle, var(--check) 0%, transparent 80%);
+    pointer-events: none;
+  }
+  .square .move-dot {
+    position: absolute;
+    width: 24%;
+    height: 24%;
+    border-radius: 50%;
+    background: rgba(26, 30, 28, 0.25);
+    pointer-events: none;
+  }
+  .square.capture .move-dot {
+    width: 85%;
+    height: 85%;
+    background: transparent;
+    border: 3px solid rgba(183, 85, 62, 0.45);
+    border-radius: 50%;
+  }
+
+  .piece {
+    font-size: 3.4rem;
+    line-height: 1;
+    position: relative;
+    z-index: 2;
+    user-select: none;
+    transition: transform 0.15s ease;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.15);
+  }
+  .piece.white { color: #FBF7EC; text-shadow: 0 2px 1px rgba(0,0,0,0.35), 0 0 1px rgba(0,0,0,0.4); }
+  .piece.black { color: #1A1E1C; text-shadow: 0 1px 0 rgba(255,255,255,0.15); }
+  .square:hover .piece { transform: translateY(-1px); }
+
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .panel {
+    background: var(--paper);
+    border: 1px solid rgba(26, 30, 28, 0.08);
+    padding: 1.5rem;
+    border-radius: 2px;
+    box-shadow: 0 1px 0 rgba(26, 30, 28, 0.03);
+  }
+  .panel-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1rem;
+  }
+  .panel-title h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.15rem;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .panel-title .label { font-size: 0.62rem; }
+
+  /* The Pulse — emotional state visualizer */
+  .pulse-meter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .pulse-bar {
+    height: 8px;
+    background: rgba(26, 30, 28, 0.07);
+    position: relative;
+    overflow: hidden;
+  }
+  .pulse-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--moss) 0%, var(--gold) 60%, var(--clay) 100%);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .pulse-marker {
+    position: absolute;
+    top: -3px;
+    width: 2px;
+    height: 14px;
+    background: var(--ink);
+    transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .pulse-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .pulse-state {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin-top: 0.25rem;
+  }
+  .pulse-detail {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .pulse-sparkline {
+    height: 32px;
+    margin-top: 0.5rem;
+  }
+
+  /* Stats panel */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.45rem 0;
+    border-bottom: 1px dotted rgba(26, 30, 28, 0.1);
+    font-size: 0.85rem;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .key { color: var(--muted); }
+  .stat-row .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  /* Move history */
+  .moves-list {
+    max-height: 240px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+  }
+  .move-row {
+    display: grid;
+    grid-template-columns: 32px 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    align-items: center;
+  }
+  .move-row .num { color: var(--muted); }
+  .move-row .ply { display: flex; align-items: center; gap: 0.35rem; }
+  .move-tag {
+    display: inline-block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted-light);
+  }
+  .move-tag.excellent { background: var(--moss); }
+  .move-tag.good { background: var(--gold-soft); }
+  .move-tag.inaccuracy { background: var(--gold); }
+  .move-tag.mistake { background: var(--clay-soft); }
+  .move-tag.blunder { background: var(--clay); }
+
+  /* Controls */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .btn {
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    padding: 0.7rem 1rem;
+    font-family: 'Geist', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--moss); }
+  .btn.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink);
+  }
+  .btn.secondary:hover { background: var(--ink); color: var(--cream); }
+  .btn.clay { background: var(--clay); }
+  .btn.clay:hover { background: var(--ink); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.full { grid-column: 1 / -1; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 30, 28, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  .modal {
+    background: var(--paper);
+    max-width: 600px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 3rem;
+    border: 1px solid var(--ink);
+    box-shadow: 0 30px 80px -20px rgba(26, 30, 28, 0.6);
+    animation: slideUp 0.4s cubic-bezier(0.2, 0, 0.2, 1);
+    position: relative;
+  }
+  .modal h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 2.2rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+    color: var(--ink);
+  }
+  .modal h2 em {
+    font-style: italic;
+    color: var(--clay);
+  }
+  .modal .lede {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+  }
+  .modal-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--muted);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--ink); }
+
+  /* Intention selector */
+  .intention-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+  .intention-card {
+    padding: 1.25rem;
+    border: 1px solid rgba(26, 30, 28, 0.15);
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .intention-card:hover {
+    border-color: var(--clay);
+    background: rgba(183, 85, 62, 0.04);
+  }
+  .intention-card.selected {
+    border-color: var(--clay);
+    background: rgba(183, 85, 62, 0.08);
+  }
+  .intention-card .label {
+    margin-bottom: 0.5rem;
+    color: var(--clay);
+  }
+  .intention-card h4 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+    color: var(--ink);
+  }
+  .intention-card p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* AI level slider */
+  .ai-level {
+    margin: 1.5rem 0;
+  }
+  .ai-level-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  .ai-level-row .display {
+    font-size: 1.2rem;
+  }
+  .level-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+  .level-options button {
+    padding: 0.7rem;
+    background: transparent;
+    border: 1px solid rgba(26, 30, 28, 0.15);
+    cursor: pointer;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--ink);
+    transition: all 0.15s;
+  }
+  .level-options button.active {
+    background: var(--ink);
+    color: var(--cream);
+    border-color: var(--ink);
+  }
+
+  /* Mindful pause overlay */
+  .pause-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(245, 241, 232, 0.96);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.6s ease;
+  }
+  .breath-circle {
+    width: 240px;
+    height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--gold-soft) 0%, var(--clay-soft) 100%);
+    opacity: 0.6;
+    animation: breathe 8s ease-in-out infinite;
+    box-shadow: 0 0 80px rgba(183, 85, 62, 0.3);
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scale(0.7); opacity: 0.4; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+  }
+  .pause-text {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 1.8rem;
+    color: var(--ink);
+    margin-top: 3rem;
+    text-align: center;
+    animation: breatheText 8s ease-in-out infinite;
+  }
+  @keyframes breatheText {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .pause-timer {
+    margin-top: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .pause-skip {
+    margin-top: 3rem;
+    background: none;
+    border: 1px solid var(--ink);
+    padding: 0.6rem 1.5rem;
+    font-family: 'Geist', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 0.7rem;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .pause-skip:hover { background: var(--ink); color: var(--cream); }
+
+  /* Reflection report */
+  .insight-card {
+    background: var(--cream);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 3px solid var(--clay);
+    position: relative;
+  }
+  .insight-card .label { margin-bottom: 0.5rem; }
+  .insight-card .text {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .insight-card.green { border-left-color: var(--moss); }
+  .insight-card.gold { border-left-color: var(--gold); }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  .metric {
+    text-align: left;
+  }
+  .metric .label { margin-bottom: 0.4rem; }
+  .metric .value {
+    font-family: 'Fraunces', serif;
+    font-size: 2.4rem;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .metric .value em {
+    font-style: italic;
+    color: var(--clay);
+  }
+  .metric .delta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Onboarding */
+  .onboarding {
+    text-align: center;
+    padding: 2rem 0;
+  }
+  .onboarding h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 3.5rem;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 1rem;
+    color: var(--ink);
+  }
+  .onboarding h1 em {
+    font-style: italic;
+    color: var(--clay);
+  }
+
+  /* Game over status */
+  .game-result {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 0.75rem;
+    margin: 1rem 0 2rem;
+  }
+
+  /* Pro upsell */
+  .pro-card {
+    background: linear-gradient(135deg, var(--ink) 0%, var(--moss-deep) 100%);
+    color: var(--cream);
+    padding: 1.75rem;
+    margin-top: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .pro-card::after {
+    content: '';
+    position: absolute;
+    top: -50%; right: -20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, var(--gold) 0%, transparent 70%);
+    opacity: 0.2;
+  }
+  .pro-card .label { color: var(--gold); }
+  .pro-card h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 1.3rem;
+    margin: 0.5rem 0 0.75rem;
+  }
+  .pro-card h3 em { color: var(--gold); font-style: italic; }
+  .pro-card p {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--muted-light);
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 2;
+  }
+  .pro-card .btn {
+    background: var(--gold);
+    color: var(--ink);
+    position: relative;
+    z-index: 2;
+  }
+  .pro-card .btn:hover { background: var(--cream); }
+
+  /* Empty state for journal/lb tabs */
+  .tab-view {
+    min-height: 400px;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+  .empty-state h2 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 2.5rem;
+    color: var(--ink);
+    margin-bottom: 1rem;
+  }
+  .empty-state p { font-family: 'Fraunces', serif; font-size: 1.05rem; max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+  /* Leaderboard */
+  .lb-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  .lb-table th, .lb-table td {
+    text-align: left;
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid rgba(26, 30, 28, 0.08);
+    font-size: 0.9rem;
+  }
+  .lb-table th {
+    font-family: 'Geist', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .lb-table .rank {
+    font-family: 'Fraunces', serif;
+    font-size: 1.4rem;
+    color: var(--clay);
+    font-weight: 400;
+    width: 50px;
+  }
+  .lb-table .name { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.1rem; }
+  .lb-table .num { font-family: 'JetBrains Mono', monospace; }
+  .lb-table tr.you { background: rgba(201, 168, 92, 0.1); }
+
+  /* Journal */
+  .journal-entry {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(26, 30, 28, 0.08);
+  }
+  .journal-entry .meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .journal-entry h4 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  .journal-entry .body {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+
+  .reflection-input {
+    width: 100%;
+    background: var(--cream);
+    border: 1px solid rgba(26, 30, 28, 0.15);
+    padding: 1rem;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--ink);
+    min-height: 100px;
+    resize: vertical;
+    margin: 1rem 0;
+  }
+  .reflection-input:focus {
+    outline: none;
+    border-color: var(--clay);
+  }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { position: static; }
+    .board { width: min(85vw, 640px); height: min(85vw, 640px); }
+    .piece { font-size: min(11vw, 3.4rem); }
+  }
+  @media (max-width: 640px) {
+    .container { padding: 1rem; }
+    header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+    nav { width: 100%; overflow-x: auto; }
+    .board { width: 92vw; height: 92vw; }
+    .piece { font-size: 11vw; }
+    .modal { padding: 2rem 1.5rem; }
+    .onboarding h1 { font-size: 2.5rem; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(26, 30, 28, 0.2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(26, 30, 28, 0.4); }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+
+<script>
+/* ==========================================================
+   chess.js v0.13.4 — inlined for offline use
+   Copyright (c) 2022 Jeff Hlywa — BSD-2-Clause License
+   https://github.com/jhlywa/chess.js
+   ========================================================== */
+(function(global){
+/*
+ * Copyright (c) 2022, Jeff Hlywa (jhlywa@gmail.com)
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ *----------------------------------------------------------------------------*/
+
+const SYMBOLS = 'pnbrqkPNBRQK'
+
+const DEFAULT_POSITION =
+  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+const TERMINATION_MARKERS = ['1-0', '0-1', '1/2-1/2', '*']
+
+const PAWN_OFFSETS = {
+  b: [16, 32, 17, 15],
+  w: [-16, -32, -17, -15],
+}
+
+const PIECE_OFFSETS = {
+  n: [-18, -33, -31, -14, 18, 33, 31, 14],
+  b: [-17, -15, 17, 15],
+  r: [-16, 1, 16, -1],
+  q: [-17, -16, -15, 1, 17, 16, 15, -1],
+  k: [-17, -16, -15, 1, 17, 16, 15, -1],
+}
+
+// prettier-ignore
+const ATTACKS = [
+  20, 0, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0, 0,20, 0,
+   0,20, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0,20, 0, 0,
+   0, 0,20, 0, 0, 0, 0, 24,  0, 0, 0, 0,20, 0, 0, 0,
+   0, 0, 0,20, 0, 0, 0, 24,  0, 0, 0,20, 0, 0, 0, 0,
+   0, 0, 0, 0,20, 0, 0, 24,  0, 0,20, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0,20, 2, 24,  2,20, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 2,53, 56, 53, 2, 0, 0, 0, 0, 0, 0,
+  24,24,24,24,24,24,56,  0, 56,24,24,24,24,24,24, 0,
+   0, 0, 0, 0, 0, 2,53, 56, 53, 2, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0,20, 2, 24,  2,20, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0,20, 0, 0, 24,  0, 0,20, 0, 0, 0, 0, 0,
+   0, 0, 0,20, 0, 0, 0, 24,  0, 0, 0,20, 0, 0, 0, 0,
+   0, 0,20, 0, 0, 0, 0, 24,  0, 0, 0, 0,20, 0, 0, 0,
+   0,20, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0,20, 0, 0,
+  20, 0, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0, 0,20
+];
+
+// prettier-ignore
+const RAYS = [
+   17,  0,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0,  0, 15, 0,
+    0, 17,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0, 15,  0, 0,
+    0,  0, 17,  0,  0,  0,  0, 16,  0,  0,  0,  0, 15,  0,  0, 0,
+    0,  0,  0, 17,  0,  0,  0, 16,  0,  0,  0, 15,  0,  0,  0, 0,
+    0,  0,  0,  0, 17,  0,  0, 16,  0,  0, 15,  0,  0,  0,  0, 0,
+    0,  0,  0,  0,  0, 17,  0, 16,  0, 15,  0,  0,  0,  0,  0, 0,
+    0,  0,  0,  0,  0,  0, 17, 16, 15,  0,  0,  0,  0,  0,  0, 0,
+    1,  1,  1,  1,  1,  1,  1,  0, -1, -1,  -1,-1, -1, -1, -1, 0,
+    0,  0,  0,  0,  0,  0,-15,-16,-17,  0,  0,  0,  0,  0,  0, 0,
+    0,  0,  0,  0,  0,-15,  0,-16,  0,-17,  0,  0,  0,  0,  0, 0,
+    0,  0,  0,  0,-15,  0,  0,-16,  0,  0,-17,  0,  0,  0,  0, 0,
+    0,  0,  0,-15,  0,  0,  0,-16,  0,  0,  0,-17,  0,  0,  0, 0,
+    0,  0,-15,  0,  0,  0,  0,-16,  0,  0,  0,  0,-17,  0,  0, 0,
+    0,-15,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,-17,  0, 0,
+  -15,  0,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,  0,-17
+];
+
+const SHIFTS = { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5 }
+
+const BITS = {
+  NORMAL: 1,
+  CAPTURE: 2,
+  BIG_PAWN: 4,
+  EP_CAPTURE: 8,
+  PROMOTION: 16,
+  KSIDE_CASTLE: 32,
+  QSIDE_CASTLE: 64,
+}
+
+const RANK_1 = 7
+const RANK_2 = 6
+const RANK_3 = 5
+const RANK_4 = 4
+const RANK_5 = 3
+const RANK_6 = 2
+const RANK_7 = 1
+const RANK_8 = 0
+
+// prettier-ignore
+const SQUARE_MAP = {
+  a8:   0, b8:   1, c8:   2, d8:   3, e8:   4, f8:   5, g8:   6, h8:   7,
+  a7:  16, b7:  17, c7:  18, d7:  19, e7:  20, f7:  21, g7:  22, h7:  23,
+  a6:  32, b6:  33, c6:  34, d6:  35, e6:  36, f6:  37, g6:  38, h6:  39,
+  a5:  48, b5:  49, c5:  50, d5:  51, e5:  52, f5:  53, g5:  54, h5:  55,
+  a4:  64, b4:  65, c4:  66, d4:  67, e4:  68, f4:  69, g4:  70, h4:  71,
+  a3:  80, b3:  81, c3:  82, d3:  83, e3:  84, f3:  85, g3:  86, h3:  87,
+  a2:  96, b2:  97, c2:  98, d2:  99, e2: 100, f2: 101, g2: 102, h2: 103,
+  a1: 112, b1: 113, c1: 114, d1: 115, e1: 116, f1: 117, g1: 118, h1: 119
+};
+
+const ROOKS = {
+  w: [
+    { square: SQUARE_MAP.a1, flag: BITS.QSIDE_CASTLE },
+    { square: SQUARE_MAP.h1, flag: BITS.KSIDE_CASTLE },
+  ],
+  b: [
+    { square: SQUARE_MAP.a8, flag: BITS.QSIDE_CASTLE },
+    { square: SQUARE_MAP.h8, flag: BITS.KSIDE_CASTLE },
+  ],
+}
+
+const PARSER_STRICT = 0
+const PARSER_SLOPPY = 1
+
+/* this function is used to uniquely identify ambiguous moves */
+function get_disambiguator(move, moves) {
+  var from = move.from
+  var to = move.to
+  var piece = move.piece
+
+  var ambiguities = 0
+  var same_rank = 0
+  var same_file = 0
+
+  for (var i = 0, len = moves.length; i < len; i++) {
+    var ambig_from = moves[i].from
+    var ambig_to = moves[i].to
+    var ambig_piece = moves[i].piece
+
+    /* if a move of the same piece type ends on the same to square, we'll
+     * need to add a disambiguator to the algebraic notation
+     */
+    if (piece === ambig_piece && from !== ambig_from && to === ambig_to) {
+      ambiguities++
+
+      if (rank(from) === rank(ambig_from)) {
+        same_rank++
+      }
+
+      if (file(from) === file(ambig_from)) {
+        same_file++
+      }
+    }
+  }
+
+  if (ambiguities > 0) {
+    /* if there exists a similar moving piece on the same rank and file as
+     * the move in question, use the square as the disambiguator
+     */
+    if (same_rank > 0 && same_file > 0) {
+      return algebraic(from)
+    } else if (same_file > 0) {
+      /* if the moving piece rests on the same file, use the rank symbol as the
+       * disambiguator
+       */
+      return algebraic(from).charAt(1)
+    } else {
+      /* else use the file symbol */
+      return algebraic(from).charAt(0)
+    }
+  }
+
+  return ''
+}
+
+function infer_piece_type(san) {
+  var piece_type = san.charAt(0)
+  if (piece_type >= 'a' && piece_type <= 'h') {
+    var matches = san.match(/[a-h]\d.*[a-h]\d/)
+    if (matches) {
+      return undefined
+    }
+    return PAWN
+  }
+  piece_type = piece_type.toLowerCase()
+  if (piece_type === 'o') {
+    return KING
+  }
+  return piece_type
+}
+
+// parses all of the decorators out of a SAN string
+function stripped_san(move) {
+  return move.replace(/=/, '').replace(/[+#]?[?!]*$/, '')
+}
+
+/*****************************************************************************
+ * UTILITY FUNCTIONS
+ ****************************************************************************/
+function rank(i) {
+  return i >> 4
+}
+
+function file(i) {
+  return i & 15
+}
+
+function algebraic(i) {
+  var f = file(i),
+    r = rank(i)
+  return 'abcdefgh'.substring(f, f + 1) + '87654321'.substring(r, r + 1)
+}
+
+function swap_color(c) {
+  return c === WHITE ? BLACK : WHITE
+}
+
+function is_digit(c) {
+  return '0123456789'.indexOf(c) !== -1
+}
+
+function clone(obj) {
+  var dupe = obj instanceof Array ? [] : {}
+
+  for (var property in obj) {
+    if (typeof property === 'object') {
+      dupe[property] = clone(obj[property])
+    } else {
+      dupe[property] = obj[property]
+    }
+  }
+
+  return dupe
+}
+
+function trim(str) {
+  return str.replace(/^\s+|\s+$/g, '')
+}
+
+/***************************************************************************
+ * PUBLIC CONSTANTS
+ **************************************************************************/
+
+const BLACK = 'b'
+const WHITE = 'w'
+
+const EMPTY = -1
+
+const PAWN = 'p'
+const KNIGHT = 'n'
+const BISHOP = 'b'
+const ROOK = 'r'
+const QUEEN = 'q'
+const KING = 'k'
+
+const SQUARES = (function () {
+  /* from the ECMA-262 spec (section 12.6.4):
+   * "The mechanics of enumerating the properties ... is
+   * implementation dependent"
+   * so: for (var sq in SQUARES) { keys.push(sq); } might not be
+   * ordered correctly
+   */
+  var keys = []
+  for (var i = SQUARE_MAP.a8; i <= SQUARE_MAP.h1; i++) {
+    if (i & 0x88) {
+      i += 7
+      continue
+    }
+    keys.push(algebraic(i))
+  }
+  return keys
+})()
+
+const FLAGS = {
+  NORMAL: 'n',
+  CAPTURE: 'c',
+  BIG_PAWN: 'b',
+  EP_CAPTURE: 'e',
+  PROMOTION: 'p',
+  KSIDE_CASTLE: 'k',
+  QSIDE_CASTLE: 'q',
+}
+
+const Chess = function (fen) {
+  var board = new Array(128)
+  var kings = { w: EMPTY, b: EMPTY }
+  var turn = WHITE
+  var castling = { w: 0, b: 0 }
+  var ep_square = EMPTY
+  var half_moves = 0
+  var move_number = 1
+  var history = []
+  var header = {}
+  var comments = {}
+
+  /* if the user passes in a fen string, load it, else default to
+   * starting position
+   */
+  if (typeof fen === 'undefined') {
+    load(DEFAULT_POSITION)
+  } else {
+    load(fen)
+  }
+
+  function clear(keep_headers) {
+    if (typeof keep_headers === 'undefined') {
+      keep_headers = false
+    }
+
+    board = new Array(128)
+    kings = { w: EMPTY, b: EMPTY }
+    turn = WHITE
+    castling = { w: 0, b: 0 }
+    ep_square = EMPTY
+    half_moves = 0
+    move_number = 1
+    history = []
+    if (!keep_headers) header = {}
+    comments = {}
+    update_setup(generate_fen())
+  }
+
+  function prune_comments() {
+    var reversed_history = []
+    var current_comments = {}
+    var copy_comment = function (fen) {
+      if (fen in comments) {
+        current_comments[fen] = comments[fen]
+      }
+    }
+    while (history.length > 0) {
+      reversed_history.push(undo_move())
+    }
+    copy_comment(generate_fen())
+    while (reversed_history.length > 0) {
+      make_move(reversed_history.pop())
+      copy_comment(generate_fen())
+    }
+    comments = current_comments
+  }
+
+  function reset() {
+    load(DEFAULT_POSITION)
+  }
+
+  function load(fen, keep_headers) {
+    if (typeof keep_headers === 'undefined') {
+      keep_headers = false
+    }
+
+    var tokens = fen.split(/\s+/)
+    var position = tokens[0]
+    var square = 0
+
+    if (!validate_fen(fen).valid) {
+      return false
+    }
+
+    clear(keep_headers)
+
+    for (var i = 0; i < position.length; i++) {
+      var piece = position.charAt(i)
+
+      if (piece === '/') {
+        square += 8
+      } else if (is_digit(piece)) {
+        square += parseInt(piece, 10)
+      } else {
+        var color = piece < 'a' ? WHITE : BLACK
+        put({ type: piece.toLowerCase(), color: color }, algebraic(square))
+        square++
+      }
+    }
+
+    turn = tokens[1]
+
+    if (tokens[2].indexOf('K') > -1) {
+      castling.w |= BITS.KSIDE_CASTLE
+    }
+    if (tokens[2].indexOf('Q') > -1) {
+      castling.w |= BITS.QSIDE_CASTLE
+    }
+    if (tokens[2].indexOf('k') > -1) {
+      castling.b |= BITS.KSIDE_CASTLE
+    }
+    if (tokens[2].indexOf('q') > -1) {
+      castling.b |= BITS.QSIDE_CASTLE
+    }
+
+    ep_square = tokens[3] === '-' ? EMPTY : SQUARE_MAP[tokens[3]]
+    half_moves = parseInt(tokens[4], 10)
+    move_number = parseInt(tokens[5], 10)
+
+    update_setup(generate_fen())
+
+    return true
+  }
+
+  /* TODO: this function is pretty much crap - it validates structure but
+   * completely ignores content (e.g. doesn't verify that each side has a king)
+   * ... we should rewrite this, and ditch the silly error_number field while
+   * we're at it
+   */
+  function validate_fen(fen) {
+    var errors = {
+      0: 'No errors.',
+      1: 'FEN string must contain six space-delimited fields.',
+      2: '6th field (move number) must be a positive integer.',
+      3: '5th field (half move counter) must be a non-negative integer.',
+      4: '4th field (en-passant square) is invalid.',
+      5: '3rd field (castling availability) is invalid.',
+      6: '2nd field (side to move) is invalid.',
+      7: "1st field (piece positions) does not contain 8 '/'-delimited rows.",
+      8: '1st field (piece positions) is invalid [consecutive numbers].',
+      9: '1st field (piece positions) is invalid [invalid piece].',
+      10: '1st field (piece positions) is invalid [row too large].',
+      11: 'Illegal en-passant square',
+    }
+
+    /* 1st criterion: 6 space-seperated fields? */
+    var tokens = fen.split(/\s+/)
+    if (tokens.length !== 6) {
+      return { valid: false, error_number: 1, error: errors[1] }
+    }
+
+    /* 2nd criterion: move number field is a integer value > 0? */
+    if (isNaN(parseInt(tokens[5])) || parseInt(tokens[5], 10) <= 0) {
+      return { valid: false, error_number: 2, error: errors[2] }
+    }
+
+    /* 3rd criterion: half move counter is an integer >= 0? */
+    if (isNaN(parseInt(tokens[4])) || parseInt(tokens[4], 10) < 0) {
+      return { valid: false, error_number: 3, error: errors[3] }
+    }
+
+    /* 4th criterion: 4th field is a valid e.p.-string? */
+    if (!/^(-|[abcdefgh][36])$/.test(tokens[3])) {
+      return { valid: false, error_number: 4, error: errors[4] }
+    }
+
+    /* 5th criterion: 3th field is a valid castle-string? */
+    if (!/^(KQ?k?q?|Qk?q?|kq?|q|-)$/.test(tokens[2])) {
+      return { valid: false, error_number: 5, error: errors[5] }
+    }
+
+    /* 6th criterion: 2nd field is "w" (white) or "b" (black)? */
+    if (!/^(w|b)$/.test(tokens[1])) {
+      return { valid: false, error_number: 6, error: errors[6] }
+    }
+
+    /* 7th criterion: 1st field contains 8 rows? */
+    var rows = tokens[0].split('/')
+    if (rows.length !== 8) {
+      return { valid: false, error_number: 7, error: errors[7] }
+    }
+
+    /* 8th criterion: every row is valid? */
+    for (var i = 0; i < rows.length; i++) {
+      /* check for right sum of fields AND not two numbers in succession */
+      var sum_fields = 0
+      var previous_was_number = false
+
+      for (var k = 0; k < rows[i].length; k++) {
+        if (!isNaN(rows[i][k])) {
+          if (previous_was_number) {
+            return { valid: false, error_number: 8, error: errors[8] }
+          }
+          sum_fields += parseInt(rows[i][k], 10)
+          previous_was_number = true
+        } else {
+          if (!/^[prnbqkPRNBQK]$/.test(rows[i][k])) {
+            return { valid: false, error_number: 9, error: errors[9] }
+          }
+          sum_fields += 1
+          previous_was_number = false
+        }
+      }
+      if (sum_fields !== 8) {
+        return { valid: false, error_number: 10, error: errors[10] }
+      }
+    }
+
+    if (
+      (tokens[3][1] == '3' && tokens[1] == 'w') ||
+      (tokens[3][1] == '6' && tokens[1] == 'b')
+    ) {
+      return { valid: false, error_number: 11, error: errors[11] }
+    }
+
+    /* everything's okay! */
+    return { valid: true, error_number: 0, error: errors[0] }
+  }
+
+  function generate_fen() {
+    var empty = 0
+    var fen = ''
+
+    for (var i = SQUARE_MAP.a8; i <= SQUARE_MAP.h1; i++) {
+      if (board[i] == null) {
+        empty++
+      } else {
+        if (empty > 0) {
+          fen += empty
+          empty = 0
+        }
+        var color = board[i].color
+        var piece = board[i].type
+
+        fen += color === WHITE ? piece.toUpperCase() : piece.toLowerCase()
+      }
+
+      if ((i + 1) & 0x88) {
+        if (empty > 0) {
+          fen += empty
+        }
+
+        if (i !== SQUARE_MAP.h1) {
+          fen += '/'
+        }
+
+        empty = 0
+        i += 8
+      }
+    }
+
+    var cflags = ''
+    if (castling[WHITE] & BITS.KSIDE_CASTLE) {
+      cflags += 'K'
+    }
+    if (castling[WHITE] & BITS.QSIDE_CASTLE) {
+      cflags += 'Q'
+    }
+    if (castling[BLACK] & BITS.KSIDE_CASTLE) {
+      cflags += 'k'
+    }
+    if (castling[BLACK] & BITS.QSIDE_CASTLE) {
+      cflags += 'q'
+    }
+
+    /* do we have an empty castling flag? */
+    cflags = cflags || '-'
+    var epflags = ep_square === EMPTY ? '-' : algebraic(ep_square)
+
+    return [fen, turn, cflags, epflags, half_moves, move_number].join(' ')
+  }
+
+  function set_header(args) {
+    for (var i = 0; i < args.length; i += 2) {
+      if (typeof args[i] === 'string' && typeof args[i + 1] === 'string') {
+        header[args[i]] = args[i + 1]
+      }
+    }
+    return header
+  }
+
+  /* called when the initial board setup is changed with put() or remove().
+   * modifies the SetUp and FEN properties of the header object.  if the FEN is
+   * equal to the default position, the SetUp and FEN are deleted
+   * the setup is only updated if history.length is zero, ie moves haven't been
+   * made.
+   */
+  function update_setup(fen) {
+    if (history.length > 0) return
+
+    if (fen !== DEFAULT_POSITION) {
+      header['SetUp'] = '1'
+      header['FEN'] = fen
+    } else {
+      delete header['SetUp']
+      delete header['FEN']
+    }
+  }
+
+  function get(square) {
+    var piece = board[SQUARE_MAP[square]]
+    return piece ? { type: piece.type, color: piece.color } : null
+  }
+
+  function put(piece, square) {
+    /* check for valid piece object */
+    if (!('type' in piece && 'color' in piece)) {
+      return false
+    }
+
+    /* check for piece */
+    if (SYMBOLS.indexOf(piece.type.toLowerCase()) === -1) {
+      return false
+    }
+
+    /* check for valid square */
+    if (!(square in SQUARE_MAP)) {
+      return false
+    }
+
+    var sq = SQUARE_MAP[square]
+
+    /* don't let the user place more than one king */
+    if (
+      piece.type == KING &&
+      !(kings[piece.color] == EMPTY || kings[piece.color] == sq)
+    ) {
+      return false
+    }
+
+    board[sq] = { type: piece.type, color: piece.color }
+    if (piece.type === KING) {
+      kings[piece.color] = sq
+    }
+
+    update_setup(generate_fen())
+
+    return true
+  }
+
+  function remove(square) {
+    var piece = get(square)
+    board[SQUARE_MAP[square]] = null
+    if (piece && piece.type === KING) {
+      kings[piece.color] = EMPTY
+    }
+
+    update_setup(generate_fen())
+
+    return piece
+  }
+
+  function build_move(board, from, to, flags, promotion) {
+    var move = {
+      color: turn,
+      from: from,
+      to: to,
+      flags: flags,
+      piece: board[from].type,
+    }
+
+    if (promotion) {
+      move.flags |= BITS.PROMOTION
+      move.promotion = promotion
+    }
+
+    if (board[to]) {
+      move.captured = board[to].type
+    } else if (flags & BITS.EP_CAPTURE) {
+      move.captured = PAWN
+    }
+    return move
+  }
+
+  function generate_moves(options) {
+    function add_move(board, moves, from, to, flags) {
+      /* if pawn promotion */
+      if (
+        board[from].type === PAWN &&
+        (rank(to) === RANK_8 || rank(to) === RANK_1)
+      ) {
+        var pieces = [QUEEN, ROOK, BISHOP, KNIGHT]
+        for (var i = 0, len = pieces.length; i < len; i++) {
+          moves.push(build_move(board, from, to, flags, pieces[i]))
+        }
+      } else {
+        moves.push(build_move(board, from, to, flags))
+      }
+    }
+
+    var moves = []
+    var us = turn
+    var them = swap_color(us)
+    var second_rank = { b: RANK_7, w: RANK_2 }
+
+    var first_sq = SQUARE_MAP.a8
+    var last_sq = SQUARE_MAP.h1
+    var single_square = false
+
+    /* do we want legal moves? */
+    var legal =
+      typeof options !== 'undefined' && 'legal' in options
+        ? options.legal
+        : true
+
+    var piece_type =
+      typeof options !== 'undefined' &&
+      'piece' in options &&
+      typeof options.piece === 'string'
+        ? options.piece.toLowerCase()
+        : true
+
+    /* are we generating moves for a single square? */
+    if (typeof options !== 'undefined' && 'square' in options) {
+      if (options.square in SQUARE_MAP) {
+        first_sq = last_sq = SQUARE_MAP[options.square]
+        single_square = true
+      } else {
+        /* invalid square */
+        return []
+      }
+    }
+
+    for (var i = first_sq; i <= last_sq; i++) {
+      /* did we run off the end of the board */
+      if (i & 0x88) {
+        i += 7
+        continue
+      }
+
+      var piece = board[i]
+      if (piece == null || piece.color !== us) {
+        continue
+      }
+
+      if (piece.type === PAWN && (piece_type === true || piece_type === PAWN)) {
+        /* single square, non-capturing */
+        var square = i + PAWN_OFFSETS[us][0]
+        if (board[square] == null) {
+          add_move(board, moves, i, square, BITS.NORMAL)
+
+          /* double square */
+          var square = i + PAWN_OFFSETS[us][1]
+          if (second_rank[us] === rank(i) && board[square] == null) {
+            add_move(board, moves, i, square, BITS.BIG_PAWN)
+          }
+        }
+
+        /* pawn captures */
+        for (j = 2; j < 4; j++) {
+          var square = i + PAWN_OFFSETS[us][j]
+          if (square & 0x88) continue
+
+          if (board[square] != null && board[square].color === them) {
+            add_move(board, moves, i, square, BITS.CAPTURE)
+          } else if (square === ep_square) {
+            add_move(board, moves, i, ep_square, BITS.EP_CAPTURE)
+          }
+        }
+      } else if (piece_type === true || piece_type === piece.type) {
+        for (var j = 0, len = PIECE_OFFSETS[piece.type].length; j < len; j++) {
+          var offset = PIECE_OFFSETS[piece.type][j]
+          var square = i
+
+          while (true) {
+            square += offset
+            if (square & 0x88) break
+
+            if (board[square] == null) {
+              add_move(board, moves, i, square, BITS.NORMAL)
+            } else {
+              if (board[square].color === us) break
+              add_move(board, moves, i, square, BITS.CAPTURE)
+              break
+            }
+
+            /* break, if knight or king */
+            if (piece.type === 'n' || piece.type === 'k') break
+          }
+        }
+      }
+    }
+
+    /* check for castling if: a) we're generating all moves, or b) we're doing
+     * single square move generation on the king's square
+     */
+    if (piece_type === true || piece_type === KING) {
+      if (!single_square || last_sq === kings[us]) {
+        /* king-side castling */
+        if (castling[us] & BITS.KSIDE_CASTLE) {
+          var castling_from = kings[us]
+          var castling_to = castling_from + 2
+
+          if (
+            board[castling_from + 1] == null &&
+            board[castling_to] == null &&
+            !attacked(them, kings[us]) &&
+            !attacked(them, castling_from + 1) &&
+            !attacked(them, castling_to)
+          ) {
+            add_move(board, moves, kings[us], castling_to, BITS.KSIDE_CASTLE)
+          }
+        }
+
+        /* queen-side castling */
+        if (castling[us] & BITS.QSIDE_CASTLE) {
+          var castling_from = kings[us]
+          var castling_to = castling_from - 2
+
+          if (
+            board[castling_from - 1] == null &&
+            board[castling_from - 2] == null &&
+            board[castling_from - 3] == null &&
+            !attacked(them, kings[us]) &&
+            !attacked(them, castling_from - 1) &&
+            !attacked(them, castling_to)
+          ) {
+            add_move(board, moves, kings[us], castling_to, BITS.QSIDE_CASTLE)
+          }
+        }
+      }
+    }
+
+    /* return all pseudo-legal moves (this includes moves that allow the king
+     * to be captured)
+     */
+    if (!legal) {
+      return moves
+    }
+
+    /* filter out illegal moves */
+    var legal_moves = []
+    for (var i = 0, len = moves.length; i < len; i++) {
+      make_move(moves[i])
+      if (!king_attacked(us)) {
+        legal_moves.push(moves[i])
+      }
+      undo_move()
+    }
+
+    return legal_moves
+  }
+
+  /* convert a move from 0x88 coordinates to Standard Algebraic Notation
+   * (SAN)
+   *
+   * @param {boolean} sloppy Use the sloppy SAN generator to work around over
+   * disambiguation bugs in Fritz and Chessbase.  See below:
+   *
+   * r1bqkbnr/ppp2ppp/2n5/1B1pP3/4P3/8/PPPP2PP/RNBQK1NR b KQkq - 2 4
+   * 4. ... Nge7 is overly disambiguated because the knight on c6 is pinned
+   * 4. ... Ne7 is technically the valid SAN
+   */
+  function move_to_san(move, moves) {
+    var output = ''
+
+    if (move.flags & BITS.KSIDE_CASTLE) {
+      output = 'O-O'
+    } else if (move.flags & BITS.QSIDE_CASTLE) {
+      output = 'O-O-O'
+    } else {
+      if (move.piece !== PAWN) {
+        var disambiguator = get_disambiguator(move, moves)
+        output += move.piece.toUpperCase() + disambiguator
+      }
+
+      if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
+        if (move.piece === PAWN) {
+          output += algebraic(move.from)[0]
+        }
+        output += 'x'
+      }
+
+      output += algebraic(move.to)
+
+      if (move.flags & BITS.PROMOTION) {
+        output += '=' + move.promotion.toUpperCase()
+      }
+    }
+
+    make_move(move)
+    if (in_check()) {
+      if (in_checkmate()) {
+        output += '#'
+      } else {
+        output += '+'
+      }
+    }
+    undo_move()
+
+    return output
+  }
+
+  function attacked(color, square) {
+    for (var i = SQUARE_MAP.a8; i <= SQUARE_MAP.h1; i++) {
+      /* did we run off the end of the board */
+      if (i & 0x88) {
+        i += 7
+        continue
+      }
+
+      /* if empty square or wrong color */
+      if (board[i] == null || board[i].color !== color) continue
+
+      var piece = board[i]
+      var difference = i - square
+      var index = difference + 119
+
+      if (ATTACKS[index] & (1 << SHIFTS[piece.type])) {
+        if (piece.type === PAWN) {
+          if (difference > 0) {
+            if (piece.color === WHITE) return true
+          } else {
+            if (piece.color === BLACK) return true
+          }
+          continue
+        }
+
+        /* if the piece is a knight or a king */
+        if (piece.type === 'n' || piece.type === 'k') return true
+
+        var offset = RAYS[index]
+        var j = i + offset
+
+        var blocked = false
+        while (j !== square) {
+          if (board[j] != null) {
+            blocked = true
+            break
+          }
+          j += offset
+        }
+
+        if (!blocked) return true
+      }
+    }
+
+    return false
+  }
+
+  function king_attacked(color) {
+    return attacked(swap_color(color), kings[color])
+  }
+
+  function in_check() {
+    return king_attacked(turn)
+  }
+
+  function in_checkmate() {
+    return in_check() && generate_moves().length === 0
+  }
+
+  function in_stalemate() {
+    return !in_check() && generate_moves().length === 0
+  }
+
+  function insufficient_material() {
+    var pieces = {}
+    var bishops = []
+    var num_pieces = 0
+    var sq_color = 0
+
+    for (var i = SQUARE_MAP.a8; i <= SQUARE_MAP.h1; i++) {
+      sq_color = (sq_color + 1) % 2
+      if (i & 0x88) {
+        i += 7
+        continue
+      }
+
+      var piece = board[i]
+      if (piece) {
+        pieces[piece.type] = piece.type in pieces ? pieces[piece.type] + 1 : 1
+        if (piece.type === BISHOP) {
+          bishops.push(sq_color)
+        }
+        num_pieces++
+      }
+    }
+
+    /* k vs. k */
+    if (num_pieces === 2) {
+      return true
+    } else if (
+      /* k vs. kn .... or .... k vs. kb */
+      num_pieces === 3 &&
+      (pieces[BISHOP] === 1 || pieces[KNIGHT] === 1)
+    ) {
+      return true
+    } else if (num_pieces === pieces[BISHOP] + 2) {
+      /* kb vs. kb where any number of bishops are all on the same color */
+      var sum = 0
+      var len = bishops.length
+      for (var i = 0; i < len; i++) {
+        sum += bishops[i]
+      }
+      if (sum === 0 || sum === len) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  function in_threefold_repetition() {
+    /* TODO: while this function is fine for casual use, a better
+     * implementation would use a Zobrist key (instead of FEN). the
+     * Zobrist key would be maintained in the make_move/undo_move functions,
+     * avoiding the costly that we do below.
+     */
+    var moves = []
+    var positions = {}
+    var repetition = false
+
+    while (true) {
+      var move = undo_move()
+      if (!move) break
+      moves.push(move)
+    }
+
+    while (true) {
+      /* remove the last two fields in the FEN string, they're not needed
+       * when checking for draw by rep */
+      var fen = generate_fen().split(' ').slice(0, 4).join(' ')
+
+      /* has the position occurred three or move times */
+      positions[fen] = fen in positions ? positions[fen] + 1 : 1
+      if (positions[fen] >= 3) {
+        repetition = true
+      }
+
+      if (!moves.length) {
+        break
+      }
+      make_move(moves.pop())
+    }
+
+    return repetition
+  }
+
+  function push(move) {
+    history.push({
+      move: move,
+      kings: { b: kings.b, w: kings.w },
+      turn: turn,
+      castling: { b: castling.b, w: castling.w },
+      ep_square: ep_square,
+      half_moves: half_moves,
+      move_number: move_number,
+    })
+  }
+
+  function make_move(move) {
+    var us = turn
+    var them = swap_color(us)
+    push(move)
+
+    board[move.to] = board[move.from]
+    board[move.from] = null
+
+    /* if ep capture, remove the captured pawn */
+    if (move.flags & BITS.EP_CAPTURE) {
+      if (turn === BLACK) {
+        board[move.to - 16] = null
+      } else {
+        board[move.to + 16] = null
+      }
+    }
+
+    /* if pawn promotion, replace with new piece */
+    if (move.flags & BITS.PROMOTION) {
+      board[move.to] = { type: move.promotion, color: us }
+    }
+
+    /* if we moved the king */
+    if (board[move.to].type === KING) {
+      kings[board[move.to].color] = move.to
+
+      /* if we castled, move the rook next to the king */
+      if (move.flags & BITS.KSIDE_CASTLE) {
+        var castling_to = move.to - 1
+        var castling_from = move.to + 1
+        board[castling_to] = board[castling_from]
+        board[castling_from] = null
+      } else if (move.flags & BITS.QSIDE_CASTLE) {
+        var castling_to = move.to + 1
+        var castling_from = move.to - 2
+        board[castling_to] = board[castling_from]
+        board[castling_from] = null
+      }
+
+      /* turn off castling */
+      castling[us] = ''
+    }
+
+    /* turn off castling if we move a rook */
+    if (castling[us]) {
+      for (var i = 0, len = ROOKS[us].length; i < len; i++) {
+        if (
+          move.from === ROOKS[us][i].square &&
+          castling[us] & ROOKS[us][i].flag
+        ) {
+          castling[us] ^= ROOKS[us][i].flag
+          break
+        }
+      }
+    }
+
+    /* turn off castling if we capture a rook */
+    if (castling[them]) {
+      for (var i = 0, len = ROOKS[them].length; i < len; i++) {
+        if (
+          move.to === ROOKS[them][i].square &&
+          castling[them] & ROOKS[them][i].flag
+        ) {
+          castling[them] ^= ROOKS[them][i].flag
+          break
+        }
+      }
+    }
+
+    /* if big pawn move, update the en passant square */
+    if (move.flags & BITS.BIG_PAWN) {
+      if (turn === 'b') {
+        ep_square = move.to - 16
+      } else {
+        ep_square = move.to + 16
+      }
+    } else {
+      ep_square = EMPTY
+    }
+
+    /* reset the 50 move counter if a pawn is moved or a piece is captured */
+    if (move.piece === PAWN) {
+      half_moves = 0
+    } else if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
+      half_moves = 0
+    } else {
+      half_moves++
+    }
+
+    if (turn === BLACK) {
+      move_number++
+    }
+    turn = swap_color(turn)
+  }
+
+  function undo_move() {
+    var old = history.pop()
+    if (old == null) {
+      return null
+    }
+
+    var move = old.move
+    kings = old.kings
+    turn = old.turn
+    castling = old.castling
+    ep_square = old.ep_square
+    half_moves = old.half_moves
+    move_number = old.move_number
+
+    var us = turn
+    var them = swap_color(turn)
+
+    board[move.from] = board[move.to]
+    board[move.from].type = move.piece // to undo any promotions
+    board[move.to] = null
+
+    if (move.flags & BITS.CAPTURE) {
+      board[move.to] = { type: move.captured, color: them }
+    } else if (move.flags & BITS.EP_CAPTURE) {
+      var index
+      if (us === BLACK) {
+        index = move.to - 16
+      } else {
+        index = move.to + 16
+      }
+      board[index] = { type: PAWN, color: them }
+    }
+
+    if (move.flags & (BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE)) {
+      var castling_to, castling_from
+      if (move.flags & BITS.KSIDE_CASTLE) {
+        castling_to = move.to + 1
+        castling_from = move.to - 1
+      } else if (move.flags & BITS.QSIDE_CASTLE) {
+        castling_to = move.to - 2
+        castling_from = move.to + 1
+      }
+
+      board[castling_to] = board[castling_from]
+      board[castling_from] = null
+    }
+
+    return move
+  }
+
+  // convert a move from Standard Algebraic Notation (SAN) to 0x88 coordinates
+  function move_from_san(move, sloppy) {
+    // strip off any move decorations: e.g Nf3+?! becomes Nf3
+    var clean_move = stripped_san(move)
+
+    // the move parsers is a 2-step state
+    for (var parser = 0; parser < 2; parser++) {
+      if (parser == PARSER_SLOPPY) {
+        // only run the sloppy parse if explicitly requested
+        if (!sloppy) {
+          return null
+        }
+
+        // The sloppy parser allows the user to parse non-standard chess
+        // notations. This parser is opt-in (by specifying the
+        // '{ sloppy: true }' setting) and is only run after the Standard
+        // Algebraic Notation (SAN) parser has failed.
+        //
+        // When running the sloppy parser, we'll run a regex to grab the piece,
+        // the to/from square, and an optional promotion piece. This regex will
+        // parse common non-standard notation like: Pe2-e4, Rc1c4, Qf3xf7,
+        // f7f8q, b1c3
+
+        // NOTE: Some positions and moves may be ambiguous when using the
+        // sloppy parser. For example, in this position:
+        // 6k1/8/8/B7/8/8/8/BN4K1 w - - 0 1, the move b1c3 may be interpreted
+        // as Nc3 or B1c3 (a disambiguated bishop move). In these cases, the
+        // sloppy parser will default to the most most basic interpretation
+        // (which is b1c3 parsing to Nc3).
+
+        // FIXME: these var's are hoisted into function scope, this will need
+        // to change when switching to const/let
+
+        var overly_disambiguated = false
+
+        var matches = clean_move.match(
+          /([pnbrqkPNBRQK])?([a-h][1-8])x?-?([a-h][1-8])([qrbnQRBN])?/
+        )
+        if (matches) {
+          var piece = matches[1]
+          var from = matches[2]
+          var to = matches[3]
+          var promotion = matches[4]
+
+          if (from.length == 1) {
+            overly_disambiguated = true
+          }
+        } else {
+          // The [a-h]?[1-8]? portion of the regex below handles moves that may
+          // be overly disambiguated (e.g. Nge7 is unnecessary and non-standard
+          // when there is one legal knight move to e7). In this case, the value
+          // of 'from' variable will be a rank or file, not a square.
+          var matches = clean_move.match(
+            /([pnbrqkPNBRQK])?([a-h]?[1-8]?)x?-?([a-h][1-8])([qrbnQRBN])?/
+          )
+
+          if (matches) {
+            var piece = matches[1]
+            var from = matches[2]
+            var to = matches[3]
+            var promotion = matches[4]
+
+            if (from.length == 1) {
+              var overly_disambiguated = true
+            }
+          }
+        }
+      }
+
+      var piece_type = infer_piece_type(clean_move)
+      var moves = generate_moves({
+        legal: true,
+        piece: piece ? piece : piece_type,
+      })
+
+      for (var i = 0, len = moves.length; i < len; i++) {
+        switch (parser) {
+          case PARSER_STRICT: {
+            if (clean_move === stripped_san(move_to_san(moves[i], moves))) {
+              return moves[i]
+            }
+            break
+          }
+          case PARSER_SLOPPY: {
+            if (matches) {
+              // hand-compare move properties with the results from our sloppy
+              // regex
+              if (
+                (!piece || piece.toLowerCase() == moves[i].piece) &&
+                SQUARE_MAP[from] == moves[i].from &&
+                SQUARE_MAP[to] == moves[i].to &&
+                (!promotion || promotion.toLowerCase() == moves[i].promotion)
+              ) {
+                return moves[i]
+              } else if (overly_disambiguated) {
+                // SPECIAL CASE: we parsed a move string that may have an
+                // unneeded rank/file disambiguator (e.g. Nge7).  The 'from'
+                // variable will
+                var square = algebraic(moves[i].from)
+                if (
+                  (!piece || piece.toLowerCase() == moves[i].piece) &&
+                  SQUARE_MAP[to] == moves[i].to &&
+                  (from == square[0] || from == square[1]) &&
+                  (!promotion || promotion.toLowerCase() == moves[i].promotion)
+                ) {
+                  return moves[i]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return null
+  }
+
+  /* pretty = external move object */
+  function make_pretty(ugly_move) {
+    var move = clone(ugly_move)
+    move.san = move_to_san(move, generate_moves({ legal: true }))
+    move.to = algebraic(move.to)
+    move.from = algebraic(move.from)
+
+    var flags = ''
+
+    for (var flag in BITS) {
+      if (BITS[flag] & move.flags) {
+        flags += FLAGS[flag]
+      }
+    }
+    move.flags = flags
+
+    return move
+  }
+
+  /*****************************************************************************
+   * DEBUGGING UTILITIES
+   ****************************************************************************/
+  function perft(depth) {
+    var moves = generate_moves({ legal: false })
+    var nodes = 0
+    var color = turn
+
+    for (var i = 0, len = moves.length; i < len; i++) {
+      make_move(moves[i])
+      if (!king_attacked(color)) {
+        if (depth - 1 > 0) {
+          var child_nodes = perft(depth - 1)
+          nodes += child_nodes
+        } else {
+          nodes++
+        }
+      }
+      undo_move()
+    }
+
+    return nodes
+  }
+
+  return {
+    /***************************************************************************
+     * PUBLIC API
+     **************************************************************************/
+    load: function (fen) {
+      return load(fen)
+    },
+
+    reset: function () {
+      return reset()
+    },
+
+    moves: function (options) {
+      /* The internal representation of a chess move is in 0x88 format, and
+       * not meant to be human-readable.  The code below converts the 0x88
+       * square coordinates to algebraic coordinates.  It also prunes an
+       * unnecessary move keys resulting from a verbose call.
+       */
+
+      var ugly_moves = generate_moves(options)
+      var moves = []
+
+      for (var i = 0, len = ugly_moves.length; i < len; i++) {
+        /* does the user want a full move object (most likely not), or just
+         * SAN
+         */
+        if (
+          typeof options !== 'undefined' &&
+          'verbose' in options &&
+          options.verbose
+        ) {
+          moves.push(make_pretty(ugly_moves[i]))
+        } else {
+          moves.push(
+            move_to_san(ugly_moves[i], generate_moves({ legal: true }))
+          )
+        }
+      }
+
+      return moves
+    },
+
+    in_check: function () {
+      return in_check()
+    },
+
+    in_checkmate: function () {
+      return in_checkmate()
+    },
+
+    in_stalemate: function () {
+      return in_stalemate()
+    },
+
+    in_draw: function () {
+      return (
+        half_moves >= 100 ||
+        in_stalemate() ||
+        insufficient_material() ||
+        in_threefold_repetition()
+      )
+    },
+
+    insufficient_material: function () {
+      return insufficient_material()
+    },
+
+    in_threefold_repetition: function () {
+      return in_threefold_repetition()
+    },
+
+    game_over: function () {
+      return (
+        half_moves >= 100 ||
+        in_checkmate() ||
+        in_stalemate() ||
+        insufficient_material() ||
+        in_threefold_repetition()
+      )
+    },
+
+    validate_fen: function (fen) {
+      return validate_fen(fen)
+    },
+
+    fen: function () {
+      return generate_fen()
+    },
+
+    board: function () {
+      var output = [],
+        row = []
+
+      for (var i = SQUARE_MAP.a8; i <= SQUARE_MAP.h1; i++) {
+        if (board[i] == null) {
+          row.push(null)
+        } else {
+          row.push({
+            square: algebraic(i),
+            type: board[i].type,
+            color: board[i].color,
+          })
+        }
+        if ((i + 1) & 0x88) {
+          output.push(row)
+          row = []
+          i += 8
+        }
+      }
+
+      return output
+    },
+
+    pgn: function (options) {
+      /* using the specification from http://www.chessclub.com/help/PGN-spec
+       * example for html usage: .pgn({ max_width: 72, newline_char: "<br />" })
+       */
+      var newline =
+        typeof options === 'object' && typeof options.newline_char === 'string'
+          ? options.newline_char
+          : '\n'
+      var max_width =
+        typeof options === 'object' && typeof options.max_width === 'number'
+          ? options.max_width
+          : 0
+      var result = []
+      var header_exists = false
+
+      /* add the PGN header information */
+      for (var i in header) {
+        /* TODO: order of enumerated properties in header object is not
+         * guaranteed, see ECMA-262 spec (section 12.6.4)
+         */
+        result.push('[' + i + ' "' + header[i] + '"]' + newline)
+        header_exists = true
+      }
+
+      if (header_exists && history.length) {
+        result.push(newline)
+      }
+
+      var append_comment = function (move_string) {
+        var comment = comments[generate_fen()]
+        if (typeof comment !== 'undefined') {
+          var delimiter = move_string.length > 0 ? ' ' : ''
+          move_string = `${move_string}${delimiter}{${comment}}`
+        }
+        return move_string
+      }
+
+      /* pop all of history onto reversed_history */
+      var reversed_history = []
+      while (history.length > 0) {
+        reversed_history.push(undo_move())
+      }
+
+      var moves = []
+      var move_string = ''
+
+      /* special case of a commented starting position with no moves */
+      if (reversed_history.length === 0) {
+        moves.push(append_comment(''))
+      }
+
+      /* build the list of moves.  a move_string looks like: "3. e3 e6" */
+      while (reversed_history.length > 0) {
+        move_string = append_comment(move_string)
+        var move = reversed_history.pop()
+
+        /* if the position started with black to move, start PGN with #. ... */
+        if (!history.length && move.color === 'b') {
+          const prefix = `${move_number}. ...`
+          /* is there a comment preceding the first move? */
+          move_string = move_string ? `${move_string} ${prefix}` : prefix
+        } else if (move.color === 'w') {
+          /* store the previous generated move_string if we have one */
+          if (move_string.length) {
+            moves.push(move_string)
+          }
+          move_string = move_number + '.'
+        }
+
+        move_string =
+          move_string + ' ' + move_to_san(move, generate_moves({ legal: true }))
+        make_move(move)
+      }
+
+      /* are there any other leftover moves? */
+      if (move_string.length) {
+        moves.push(append_comment(move_string))
+      }
+
+      /* is there a result? */
+      if (typeof header.Result !== 'undefined') {
+        moves.push(header.Result)
+      }
+
+      /* history should be back to what it was before we started generating PGN,
+       * so join together moves
+       */
+      if (max_width === 0) {
+        return result.join('') + moves.join(' ')
+      }
+
+      var strip = function () {
+        if (result.length > 0 && result[result.length - 1] === ' ') {
+          result.pop()
+          return true
+        }
+        return false
+      }
+
+      /* NB: this does not preserve comment whitespace. */
+      var wrap_comment = function (width, move) {
+        for (var token of move.split(' ')) {
+          if (!token) {
+            continue
+          }
+          if (width + token.length > max_width) {
+            while (strip()) {
+              width--
+            }
+            result.push(newline)
+            width = 0
+          }
+          result.push(token)
+          width += token.length
+          result.push(' ')
+          width++
+        }
+        if (strip()) {
+          width--
+        }
+        return width
+      }
+
+      /* wrap the PGN output at max_width */
+      var current_width = 0
+      for (var i = 0; i < moves.length; i++) {
+        if (current_width + moves[i].length > max_width) {
+          if (moves[i].includes('{')) {
+            current_width = wrap_comment(current_width, moves[i])
+            continue
+          }
+        }
+        /* if the current move will push past max_width */
+        if (current_width + moves[i].length > max_width && i !== 0) {
+          /* don't end the line with whitespace */
+          if (result[result.length - 1] === ' ') {
+            result.pop()
+          }
+
+          result.push(newline)
+          current_width = 0
+        } else if (i !== 0) {
+          result.push(' ')
+          current_width++
+        }
+        result.push(moves[i])
+        current_width += moves[i].length
+      }
+
+      return result.join('')
+    },
+
+    load_pgn: function (pgn, options) {
+      // allow the user to specify the sloppy move parser to work around over
+      // disambiguation bugs in Fritz and Chessbase
+      var sloppy =
+        typeof options !== 'undefined' && 'sloppy' in options
+          ? options.sloppy
+          : false
+
+      function mask(str) {
+        return str.replace(/\\/g, '\\')
+      }
+
+      function parse_pgn_header(header, options) {
+        var newline_char =
+          typeof options === 'object' &&
+          typeof options.newline_char === 'string'
+            ? options.newline_char
+            : '\r?\n'
+        var header_obj = {}
+        var headers = header.split(new RegExp(mask(newline_char)))
+        var key = ''
+        var value = ''
+
+        for (var i = 0; i < headers.length; i++) {
+          var regex = /^\s*\[([A-Za-z]+)\s*"(.*)"\s*\]\s*$/
+          key = headers[i].replace(regex, '$1')
+          value = headers[i].replace(regex, '$2')
+          if (trim(key).length > 0) {
+            header_obj[key] = value
+          }
+        }
+
+        return header_obj
+      }
+
+      // strip whitespace from head/tail of PGN block
+      pgn = pgn.trim()
+
+      var newline_char =
+        typeof options === 'object' && typeof options.newline_char === 'string'
+          ? options.newline_char
+          : '\r?\n'
+
+      // RegExp to split header. Takes advantage of the fact that header and movetext
+      // will always have a blank line between them (ie, two newline_char's).
+      // With default newline_char, will equal: /^(\[((?:\r?\n)|.)*\])(?:\s*\r?\n){2}/
+      var header_regex = new RegExp(
+        '^(\\[((?:' +
+          mask(newline_char) +
+          ')|.)*\\])' +
+          '(?:\\s*' +
+          mask(newline_char) +
+          '){2}'
+      )
+
+      // If no header given, begin with moves.
+      var header_string = header_regex.test(pgn)
+        ? header_regex.exec(pgn)[1]
+        : ''
+
+      // Put the board in the starting position
+      reset()
+
+      /* parse PGN header */
+      var headers = parse_pgn_header(header_string, options)
+      var fen = ''
+
+      for (var key in headers) {
+        // check to see user is including fen (possibly with wrong tag case)
+        if (key.toLowerCase() === 'fen') {
+          fen = headers[key]
+        }
+        set_header([key, headers[key]])
+      }
+
+      /* sloppy parser should attempt to load a fen tag, even if it's
+       * the wrong case and doesn't include a corresponding [SetUp "1"] tag */
+      if (sloppy) {
+        if (fen) {
+          if (!load(fen, true)) {
+            return false
+          }
+        }
+      } else {
+        /* strict parser - load the starting position indicated by [Setup '1']
+         * and [FEN position] */
+        if (headers['SetUp'] === '1') {
+          if (!('FEN' in headers && load(headers['FEN'], true))) {
+            // second argument to load: don't clear the headers
+            return false
+          }
+        }
+      }
+
+      /* NB: the regexes below that delete move numbers, recursive
+       * annotations, and numeric annotation glyphs may also match
+       * text in comments. To prevent this, we transform comments
+       * by hex-encoding them in place and decoding them again after
+       * the other tokens have been deleted.
+       *
+       * While the spec states that PGN files should be ASCII encoded,
+       * we use {en,de}codeURIComponent here to support arbitrary UTF8
+       * as a convenience for modern users */
+
+      var to_hex = function (string) {
+        return Array.from(string)
+          .map(function (c) {
+            /* encodeURI doesn't transform most ASCII characters,
+             * so we handle these ourselves */
+            return c.charCodeAt(0) < 128
+              ? c.charCodeAt(0).toString(16)
+              : encodeURIComponent(c).replace(/\%/g, '').toLowerCase()
+          })
+          .join('')
+      }
+
+      var from_hex = function (string) {
+        return string.length == 0
+          ? ''
+          : decodeURIComponent('%' + string.match(/.{1,2}/g).join('%'))
+      }
+
+      var encode_comment = function (string) {
+        string = string.replace(new RegExp(mask(newline_char), 'g'), ' ')
+        return `{${to_hex(string.slice(1, string.length - 1))}}`
+      }
+
+      var decode_comment = function (string) {
+        if (string.startsWith('{') && string.endsWith('}')) {
+          return from_hex(string.slice(1, string.length - 1))
+        }
+      }
+
+      /* delete header to get the moves */
+      var ms = pgn
+        .replace(header_string, '')
+        .replace(
+          /* encode comments so they don't get deleted below */
+          new RegExp(`(\{[^}]*\})+?|;([^${mask(newline_char)}]*)`, 'g'),
+          function (match, bracket, semicolon) {
+            return bracket !== undefined
+              ? encode_comment(bracket)
+              : ' ' + encode_comment(`{${semicolon.slice(1)}}`)
+          }
+        )
+        .replace(new RegExp(mask(newline_char), 'g'), ' ')
+
+      /* delete recursive annotation variations */
+      var rav_regex = /(\([^\(\)]+\))+?/g
+      while (rav_regex.test(ms)) {
+        ms = ms.replace(rav_regex, '')
+      }
+
+      /* delete move numbers */
+      ms = ms.replace(/\d+\.(\.\.)?/g, '')
+
+      /* delete ... indicating black to move */
+      ms = ms.replace(/\.\.\./g, '')
+
+      /* delete numeric annotation glyphs */
+      ms = ms.replace(/\$\d+/g, '')
+
+      /* trim and get array of moves */
+      var moves = trim(ms).split(new RegExp(/\s+/))
+
+      /* delete empty entries */
+      moves = moves.join(',').replace(/,,+/g, ',').split(',')
+      var move = ''
+
+      var result = ''
+
+      for (var half_move = 0; half_move < moves.length; half_move++) {
+        var comment = decode_comment(moves[half_move])
+        if (comment !== undefined) {
+          comments[generate_fen()] = comment
+          continue
+        }
+
+        move = move_from_san(moves[half_move], sloppy)
+
+        /* invalid move */
+        if (move == null) {
+          /* was the move an end of game marker */
+          if (TERMINATION_MARKERS.indexOf(moves[half_move]) > -1) {
+            result = moves[half_move]
+          } else {
+            return false
+          }
+        } else {
+          /* reset the end of game marker if making a valid move */
+          result = ''
+          make_move(move)
+        }
+      }
+
+      /* Per section 8.2.6 of the PGN spec, the Result tag pair must match
+       * match the termination marker. Only do this when headers are present,
+       * but the result tag is missing
+       */
+      if (result && Object.keys(header).length && !header['Result']) {
+        set_header(['Result', result])
+      }
+
+      return true
+    },
+
+    header: function () {
+      return set_header(arguments)
+    },
+
+    turn: function () {
+      return turn
+    },
+
+    move: function (move, options) {
+      /* The move function can be called with in the following parameters:
+       *
+       * .move('Nxb7')      <- where 'move' is a case-sensitive SAN string
+       *
+       * .move({ from: 'h7', <- where the 'move' is a move object (additional
+       *         to :'h8',      fields are ignored)
+       *         promotion: 'q',
+       *      })
+       */
+
+      // allow the user to specify the sloppy move parser to work around over
+      // disambiguation bugs in Fritz and Chessbase
+      var sloppy =
+        typeof options !== 'undefined' && 'sloppy' in options
+          ? options.sloppy
+          : false
+
+      var move_obj = null
+
+      if (typeof move === 'string') {
+        move_obj = move_from_san(move, sloppy)
+      } else if (typeof move === 'object') {
+        var moves = generate_moves()
+
+        /* convert the pretty move object to an ugly move object */
+        for (var i = 0, len = moves.length; i < len; i++) {
+          if (
+            move.from === algebraic(moves[i].from) &&
+            move.to === algebraic(moves[i].to) &&
+            (!('promotion' in moves[i]) ||
+              move.promotion === moves[i].promotion)
+          ) {
+            move_obj = moves[i]
+            break
+          }
+        }
+      }
+
+      /* failed to find move */
+      if (!move_obj) {
+        return null
+      }
+
+      /* need to make a copy of move because we can't generate SAN after the
+       * move is made
+       */
+      var pretty_move = make_pretty(move_obj)
+
+      make_move(move_obj)
+
+      return pretty_move
+    },
+
+    undo: function () {
+      var move = undo_move()
+      return move ? make_pretty(move) : null
+    },
+
+    clear: function () {
+      return clear()
+    },
+
+    put: function (piece, square) {
+      return put(piece, square)
+    },
+
+    get: function (square) {
+      return get(square)
+    },
+
+    ascii() {
+      var s = '   +------------------------+\n'
+      for (var i = SQUARE_MAP.a8; i <= SQUARE_MAP.h1; i++) {
+        /* display the rank */
+        if (file(i) === 0) {
+          s += ' ' + '87654321'[rank(i)] + ' |'
+        }
+
+        /* empty piece */
+        if (board[i] == null) {
+          s += ' . '
+        } else {
+          var piece = board[i].type
+          var color = board[i].color
+          var symbol =
+            color === WHITE ? piece.toUpperCase() : piece.toLowerCase()
+          s += ' ' + symbol + ' '
+        }
+
+        if ((i + 1) & 0x88) {
+          s += '|\n'
+          i += 8
+        }
+      }
+      s += '   +------------------------+\n'
+      s += '     a  b  c  d  e  f  g  h'
+
+      return s
+    },
+
+    remove: function (square) {
+      return remove(square)
+    },
+
+    perft: function (depth) {
+      return perft(depth)
+    },
+
+    square_color: function (square) {
+      if (square in SQUARE_MAP) {
+        var sq_0x88 = SQUARE_MAP[square]
+        return (rank(sq_0x88) + file(sq_0x88)) % 2 === 0 ? 'light' : 'dark'
+      }
+
+      return null
+    },
+
+    history: function (options) {
+      var reversed_history = []
+      var move_history = []
+      var verbose =
+        typeof options !== 'undefined' &&
+        'verbose' in options &&
+        options.verbose
+
+      while (history.length > 0) {
+        reversed_history.push(undo_move())
+      }
+
+      while (reversed_history.length > 0) {
+        var move = reversed_history.pop()
+        if (verbose) {
+          move_history.push(make_pretty(move))
+        } else {
+          move_history.push(move_to_san(move, generate_moves({ legal: true })))
+        }
+        make_move(move)
+      }
+
+      return move_history
+    },
+
+    get_comment: function () {
+      return comments[generate_fen()]
+    },
+
+    set_comment: function (comment) {
+      comments[generate_fen()] = comment.replace('{', '[').replace('}', ']')
+    },
+
+    delete_comment: function () {
+      var comment = comments[generate_fen()]
+      delete comments[generate_fen()]
+      return comment
+    },
+
+    get_comments: function () {
+      prune_comments()
+      return Object.keys(comments).map(function (fen) {
+        return { fen: fen, comment: comments[fen] }
+      })
+    },
+
+    delete_comments: function () {
+      prune_comments()
+      return Object.keys(comments).map(function (fen) {
+        var comment = comments[fen]
+        delete comments[fen]
+        return { fen: fen, comment: comment }
+      })
+    },
+  }
+}
+
+global.Chess = Chess;
+})(window);
+
+/* ==========================================================
+   MindChess — Chess as practice for emotional control
+   Vanilla JS implementation, no build step
+   ========================================================== */
+
+const PIECES = {
+  'wK': '♔', 'wQ': '♕', 'wR': '♖', 'wB': '♗', 'wN': '♘', 'wP': '♙',
+  'bK': '♚', 'bQ': '♛', 'bR': '♜', 'bB': '♝', 'bN': '♞', 'bP': '♟'
+};
+
+const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+const RANKS = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+// ----- Chess engine (using chess.js) + simple AI -----
+const Chess = window.Chess;
+
+// Piece values for evaluation
+const PIECE_VAL = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+
+// Piece-square tables (simplified, for white; black is mirrored)
+const PST = {
+  p: [
+    0,  0,  0,  0,  0,  0,  0,  0,
+    50, 50, 50, 50, 50, 50, 50, 50,
+    10, 10, 20, 30, 30, 20, 10, 10,
+    5,  5, 10, 25, 25, 10,  5,  5,
+    0,  0,  0, 20, 20,  0,  0,  0,
+    5, -5,-10,  0,  0,-10, -5,  5,
+    5, 10, 10,-20,-20, 10, 10,  5,
+    0,  0,  0,  0,  0,  0,  0,  0
+  ],
+  n: [
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50,
+  ],
+  b: [
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20,
+  ],
+  r: [
+    0,  0,  0,  0,  0,  0,  0,  0,
+    5, 10, 10, 10, 10, 10, 10,  5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    0,  0,  0,  5,  5,  0,  0,  0
+  ],
+  q: [
+    -20,-10,-10, -5, -5,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5,  5,  5,  5,  0,-10,
+    -5,   0,  5,  5,  5,  5,  0, -5,
+     0,   0,  5,  5,  5,  5,  0, -5,
+    -10,  5,  5,  5,  5,  5,  0,-10,
+    -10,  0,  5,  0,  0,  0,  0,-10,
+    -20,-10,-10, -5, -5,-10,-10,-20
+  ],
+  k: [
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+     20, 20,  0,  0,  0,  0, 20, 20,
+     20, 30, 10,  0,  0, 10, 30, 20
+  ]
+};
+
+function sqIdx(square) {
+  const file = square.charCodeAt(0) - 97;
+  const rank = 8 - parseInt(square[1]);
+  return rank * 8 + file;
+}
+
+function evaluateBoard(chess) {
+  if (chess.in_checkmate()) return chess.turn() === 'w' ? -100000 : 100000;
+  if (chess.in_draw() || chess.in_stalemate() || chess.in_threefold_repetition() || chess.insufficient_material()) return 0;
+
+  let score = 0;
+  const board = chess.board();
+  for (let r = 0; r < 8; r++) {
+    for (let f = 0; f < 8; f++) {
+      const piece = board[r][f];
+      if (!piece) continue;
+      const val = PIECE_VAL[piece.type];
+      const idx = r * 8 + f;
+      const pstIdx = piece.color === 'w' ? idx : (7 - r) * 8 + f;
+      const pst = PST[piece.type][pstIdx];
+      const total = val + pst;
+      score += piece.color === 'w' ? total : -total;
+    }
+  }
+  return score;
+}
+
+function minimax(chess, depth, alpha, beta, maximizing) {
+  if (depth === 0 || chess.game_over()) {
+    return { score: evaluateBoard(chess), move: null };
+  }
+  const moves = chess.moves({ verbose: true });
+  // Move ordering: captures first
+  moves.sort((a, b) => (b.captured ? 1 : 0) - (a.captured ? 1 : 0));
+
+  let bestMove = moves[0];
+  if (maximizing) {
+    let max = -Infinity;
+    for (const move of moves) {
+      chess.move(move);
+      const { score } = minimax(chess, depth - 1, alpha, beta, false);
+      chess.undo();
+      if (score > max) { max = score; bestMove = move; }
+      alpha = Math.max(alpha, score);
+      if (beta <= alpha) break;
+    }
+    return { score: max, move: bestMove };
+  } else {
+    let min = Infinity;
+    for (const move of moves) {
+      chess.move(move);
+      const { score } = minimax(chess, depth - 1, alpha, beta, true);
+      chess.undo();
+      if (score < min) { min = score; bestMove = move; }
+      beta = Math.min(beta, score);
+      if (beta <= alpha) break;
+    }
+    return { score: min, move: bestMove };
+  }
+}
+
+function getAIMove(chess, level) {
+  const depths = { easy: 1, medium: 2, hard: 3 };
+  const depth = depths[level] || 2;
+  const maximizing = chess.turn() === 'w';
+  const { move } = minimax(chess, depth, -Infinity, Infinity, maximizing);
+
+  // Easy mode: 30% chance of picking a random legal move (mistakes feel human)
+  if (level === 'easy' && Math.random() < 0.3) {
+    const moves = chess.moves({ verbose: true });
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+  return move;
+}
+
+// Evaluate a move's quality vs best (returns category + eval drop)
+function classifyMove(chessBeforeMove, moveMade, level = 'medium') {
+  const depth = 2;
+  const turn = chessBeforeMove.turn();
+  const maximizing = turn === 'w';
+  const { score: bestScore } = minimax(chessBeforeMove, depth, -Infinity, Infinity, maximizing);
+
+  chessBeforeMove.move(moveMade);
+  const { score: afterScore } = minimax(chessBeforeMove, depth - 1, -Infinity, Infinity, !maximizing);
+  chessBeforeMove.undo();
+
+  // Convert to "loss from player's perspective" in centipawns
+  const loss = maximizing ? (bestScore - afterScore) : (afterScore - bestScore);
+
+  let category;
+  if (loss <= 30) category = 'excellent';
+  else if (loss <= 80) category = 'good';
+  else if (loss <= 180) category = 'inaccuracy';
+  else if (loss <= 350) category = 'mistake';
+  else category = 'blunder';
+
+  return { category, loss };
+}
+
+// ==========================================================
+// App state
+// ==========================================================
+const STATE = {
+  view: 'play', // 'play', 'leaderboard', 'journal'
+  game: null,
+  aiLevel: 'medium',
+  intention: null,
+  selectedSquare: null,
+  legalMoves: [],
+  lastMove: null,
+  moveHistory: [], // {san, fen, time, quality, loss}
+  moveTimestamps: [],
+  pulse: 0.5, // 0 (calm) to 1 (tilted)
+  pulseHistory: [],
+  showOnboarding: true,
+  showPause: false,
+  showReflection: false,
+  showSettings: false,
+  pauseSeconds: 10,
+  pauseInterval: null,
+  thinking: false,
+  reflectionText: '',
+  resultText: ''
+};
+
+const STORAGE_KEY = 'mindchess_v1';
+
+function loadStorage() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    return {
+      onboarded: data.onboarded || false,
+      journal: data.journal || [],
+      stats: data.stats || {
+        gamesPlayed: 0,
+        wins: 0, losses: 0, draws: 0,
+        avgPatience: 0.5,
+        avgResilience: 0.5,
+        avgFocus: 0.5,
+        avgComposure: 0.5,
+        rating: 1200
+      }
+    };
+  } catch (e) {
+    return { onboarded: false, journal: [], stats: { gamesPlayed: 0, wins: 0, losses: 0, draws: 0, avgPatience: 0.5, avgResilience: 0.5, avgFocus: 0.5, avgComposure: 0.5, rating: 1200 } };
+  }
+}
+
+function saveStorage(updates) {
+  const current = loadStorage();
+  const next = { ...current, ...updates };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  return next;
+}
+
+let STORE = loadStorage();
+
+// ==========================================================
+// Intention catalog
+// ==========================================================
+const INTENTIONS = [
+  { id: 'patience', label: 'Practice', title: 'Patience', desc: 'Slow down. Sit with hard positions. Let urgency pass.' },
+  { id: 'resilience', label: 'Practice', title: 'Resilience', desc: 'A blunder is data, not identity. Stay in the next move.' },
+  { id: 'focus', label: 'Practice', title: 'Focus', desc: 'One position at a time. Notice the drift before it costs you.' },
+  { id: 'play', label: 'Just', title: 'Play', desc: 'No intention. Some sessions are just for the love of it.' }
+];
+
+// ==========================================================
+// Game logic
+// ==========================================================
+function newGame() {
+  STATE.game = new Chess();
+  STATE.selectedSquare = null;
+  STATE.legalMoves = [];
+  STATE.lastMove = null;
+  STATE.moveHistory = [];
+  STATE.moveTimestamps = [Date.now()];
+  STATE.pulse = 0.5;
+  STATE.pulseHistory = [0.5];
+  STATE.resultText = '';
+  render();
+}
+
+function handleSquareClick(square) {
+  if (!STATE.game || STATE.game.game_over() || STATE.thinking) return;
+  if (STATE.game.turn() !== 'w') return; // player is white
+
+  const piece = STATE.game.get(square);
+
+  if (STATE.selectedSquare === square) {
+    STATE.selectedSquare = null;
+    STATE.legalMoves = [];
+    render();
+    return;
+  }
+
+  if (STATE.selectedSquare) {
+    // Try to move
+    const move = { from: STATE.selectedSquare, to: square, promotion: 'q' };
+    const legal = STATE.legalMoves.find(m => m.to === square);
+    if (legal) {
+      makeMove(move);
+      return;
+    }
+    // Else maybe selecting own piece
+    if (piece && piece.color === 'w') {
+      STATE.selectedSquare = square;
+      STATE.legalMoves = STATE.game.moves({ square, verbose: true });
+      render();
+      return;
+    }
+    STATE.selectedSquare = null;
+    STATE.legalMoves = [];
+    render();
+    return;
+  }
+
+  if (piece && piece.color === 'w') {
+    STATE.selectedSquare = square;
+    STATE.legalMoves = STATE.game.moves({ square, verbose: true });
+    render();
+  }
+}
+
+function makeMove(move) {
+  const moveStartTime = STATE.moveTimestamps[STATE.moveTimestamps.length - 1];
+  const moveTime = (Date.now() - moveStartTime) / 1000; // seconds
+
+  // Snapshot game before move to evaluate quality
+  const fenBefore = STATE.game.fen();
+  const tempGame = new Chess(fenBefore);
+
+  const result = STATE.game.move(move);
+  if (!result) return;
+
+  // Classify move quality
+  const { category, loss } = classifyMove(tempGame, result);
+
+  STATE.moveHistory.push({
+    san: result.san,
+    fen: STATE.game.fen(),
+    time: moveTime,
+    quality: category,
+    loss,
+    color: result.color
+  });
+  STATE.moveTimestamps.push(Date.now());
+  STATE.lastMove = { from: result.from, to: result.to };
+  STATE.selectedSquare = null;
+  STATE.legalMoves = [];
+
+  updatePulse();
+
+  if (STATE.game.game_over()) {
+    endGame();
+    render();
+    return;
+  }
+
+  // Check for mindful moment trigger
+  if (shouldOfferMindfulPause()) {
+    setTimeout(() => offerMindfulPause(), 400);
+  }
+
+  render();
+
+  // AI turn
+  setTimeout(() => {
+    STATE.thinking = true;
+    render();
+    setTimeout(makeAIMove, 600);
+  }, 250);
+}
+
+function makeAIMove() {
+  const move = getAIMove(STATE.game, STATE.aiLevel);
+  if (!move) {
+    STATE.thinking = false;
+    render();
+    return;
+  }
+  const result = STATE.game.move(move);
+  STATE.moveHistory.push({
+    san: result.san,
+    fen: STATE.game.fen(),
+    time: 0,
+    quality: null,
+    loss: 0,
+    color: result.color
+  });
+  STATE.moveTimestamps.push(Date.now());
+  STATE.lastMove = { from: result.from, to: result.to };
+  STATE.thinking = false;
+
+  if (STATE.game.game_over()) {
+    endGame();
+  }
+  render();
+}
+
+function endGame() {
+  if (STATE.game.in_checkmate()) {
+    STATE.resultText = STATE.game.turn() === 'w' ? 'Defeat — Black wins' : 'Victory — White wins';
+  } else if (STATE.game.in_stalemate()) STATE.resultText = 'Stalemate';
+  else if (STATE.game.in_threefold_repetition()) STATE.resultText = 'Draw — Repetition';
+  else if (STATE.game.insufficient_material()) STATE.resultText = 'Draw — Insufficient material';
+  else if (STATE.game.in_draw()) STATE.resultText = 'Draw';
+
+  // Record stats
+  const playerWon = STATE.game.in_checkmate() && STATE.game.turn() === 'b';
+  const playerLost = STATE.game.in_checkmate() && STATE.game.turn() === 'w';
+  const draw = STATE.game.in_draw() || STATE.game.in_stalemate() || STATE.game.in_threefold_repetition();
+
+  const metrics = computeFinalMetrics();
+  const stats = STORE.stats;
+  stats.gamesPlayed++;
+  if (playerWon) stats.wins++;
+  if (playerLost) stats.losses++;
+  if (draw) stats.draws++;
+
+  // EMA for metrics
+  const a = 0.25;
+  stats.avgPatience = stats.avgPatience * (1 - a) + metrics.patience * a;
+  stats.avgResilience = stats.avgResilience * (1 - a) + metrics.resilience * a;
+  stats.avgFocus = stats.avgFocus * (1 - a) + metrics.focus * a;
+  stats.avgComposure = stats.avgComposure * (1 - a) + metrics.composure * a;
+
+  // Simple rating adjustment
+  const expected = 0.5;
+  const score = playerWon ? 1 : playerLost ? 0 : 0.5;
+  stats.rating = Math.round(stats.rating + 32 * (score - expected));
+
+  STORE = saveStorage({ stats });
+
+  // Show reflection after short delay
+  setTimeout(() => {
+    STATE.showReflection = true;
+    render();
+  }, 1000);
+}
+
+// ==========================================================
+// Pulse / emotional state tracking
+// ==========================================================
+function updatePulse() {
+  const playerMoves = STATE.moveHistory.filter(m => m.color === 'w');
+  if (playerMoves.length < 2) {
+    STATE.pulseHistory.push(STATE.pulse);
+    return;
+  }
+
+  const recent = playerMoves.slice(-3);
+  const earlier = playerMoves.slice(-6, -3);
+
+  // Component 1: recent move quality
+  const qualityScore = recent.reduce((sum, m) => {
+    const score = { excellent: 0, good: 0.1, inaccuracy: 0.3, mistake: 0.6, blunder: 1 }[m.quality] || 0;
+    return sum + score;
+  }, 0) / recent.length;
+
+  // Component 2: time variance (rushing after a bad move = tilt)
+  let timeVariance = 0;
+  if (playerMoves.length >= 3) {
+    const last = playerMoves[playerMoves.length - 1];
+    const prev = playerMoves[playerMoves.length - 2];
+    if (prev.quality === 'mistake' || prev.quality === 'blunder') {
+      if (last.time < 5) timeVariance = 0.3; // rushed after blunder
+    }
+  }
+
+  // Component 3: trend — consecutive bad moves
+  let consecutive = 0;
+  for (let i = playerMoves.length - 1; i >= 0; i--) {
+    if (playerMoves[i].quality === 'mistake' || playerMoves[i].quality === 'blunder') consecutive++;
+    else break;
+  }
+
+  const newPulse = Math.min(1, qualityScore + timeVariance + consecutive * 0.1);
+
+  // Smoothing
+  STATE.pulse = STATE.pulse * 0.5 + newPulse * 0.5;
+  STATE.pulseHistory.push(STATE.pulse);
+}
+
+function pulseStateText() {
+  const p = STATE.pulse;
+  if (p < 0.25) return { text: 'Centered.', detail: 'Your moves are deliberate and your timing is steady.' };
+  if (p < 0.5) return { text: 'Engaged.', detail: 'A working calm. You are present in the position.' };
+  if (p < 0.7) return { text: 'Pressing.', detail: 'A small flutter is detectable. Try a longer breath.' };
+  if (p < 0.85) return { text: 'Drifting.', detail: 'Recent moves suggest urgency outpacing thought.' };
+  return { text: 'Tilted.', detail: 'You are playing the room, not the board. Consider a pause.' };
+}
+
+// ==========================================================
+// Mindful pause triggers
+// ==========================================================
+function shouldOfferMindfulPause() {
+  // Offer if pulse is high and we haven't paused this game
+  if (STATE.pulse > 0.7 && Math.random() < 0.6) return true;
+  // Offer if the player just blundered (educational moment)
+  const last = STATE.moveHistory.filter(m => m.color === 'w').slice(-1)[0];
+  if (last && last.quality === 'blunder' && Math.random() < 0.5) return true;
+  return false;
+}
+
+function offerMindfulPause() {
+  if (STATE.game.game_over()) return;
+  STATE.showPause = true;
+  STATE.pauseSeconds = 10;
+  render();
+  STATE.pauseInterval = setInterval(() => {
+    STATE.pauseSeconds--;
+    if (STATE.pauseSeconds <= 0) {
+      closeMindfulPause();
+    } else {
+      // Just update the timer text without full re-render
+      const t = document.getElementById('pause-timer');
+      if (t) t.textContent = `${STATE.pauseSeconds}s`;
+    }
+  }, 1000);
+}
+
+function closeMindfulPause() {
+  clearInterval(STATE.pauseInterval);
+  STATE.showPause = false;
+  // Reduce pulse slightly — the act of pausing has effect
+  STATE.pulse = Math.max(0.3, STATE.pulse - 0.2);
+  render();
+}
+
+// ==========================================================
+// Reflection / metrics
+// ==========================================================
+function computeFinalMetrics() {
+  const playerMoves = STATE.moveHistory.filter(m => m.color === 'w');
+  if (playerMoves.length === 0) {
+    return { patience: 0.5, resilience: 0.5, focus: 0.5, composure: 0.5, accuracy: 0 };
+  }
+
+  // Patience: avg time on moves, especially complex positions
+  const avgTime = playerMoves.reduce((s, m) => s + m.time, 0) / playerMoves.length;
+  const patience = Math.min(1, avgTime / 15); // 15s avg = full score
+
+  // Resilience: accuracy after a blunder
+  let postBlunderMoves = [];
+  for (let i = 0; i < playerMoves.length - 1; i++) {
+    if (playerMoves[i].quality === 'blunder' || playerMoves[i].quality === 'mistake') {
+      postBlunderMoves.push(playerMoves[i + 1]);
+    }
+  }
+  let resilience = 0.7; // default
+  if (postBlunderMoves.length > 0) {
+    const goodAfter = postBlunderMoves.filter(m => m.quality === 'excellent' || m.quality === 'good').length;
+    resilience = goodAfter / postBlunderMoves.length;
+  }
+
+  // Focus: consistency — low standard deviation of move quality
+  const losses = playerMoves.map(m => m.loss);
+  const mean = losses.reduce((s, x) => s + x, 0) / losses.length;
+  const variance = losses.reduce((s, x) => s + (x - mean) ** 2, 0) / losses.length;
+  const stddev = Math.sqrt(variance);
+  const focus = Math.max(0, 1 - stddev / 300);
+
+  // Composure: time variance
+  const times = playerMoves.map(m => m.time);
+  const timeMean = times.reduce((s, x) => s + x, 0) / times.length;
+  const timeVar = times.reduce((s, x) => s + (x - timeMean) ** 2, 0) / times.length;
+  const timeStddev = Math.sqrt(timeVar);
+  const composure = Math.max(0, 1 - timeStddev / 20);
+
+  // Accuracy: % of moves that were good or excellent
+  const goodMoves = playerMoves.filter(m => m.quality === 'excellent' || m.quality === 'good').length;
+  const accuracy = goodMoves / playerMoves.length;
+
+  return { patience, resilience, focus, composure, accuracy };
+}
+
+function generateInsights(metrics) {
+  const insights = [];
+  const playerMoves = STATE.moveHistory.filter(m => m.color === 'w');
+
+  // Strong opening?
+  const opening = playerMoves.slice(0, 6);
+  const openingGood = opening.filter(m => m.quality === 'excellent' || m.quality === 'good').length;
+  if (openingGood >= 4) {
+    insights.push({
+      type: 'green',
+      label: 'Strength',
+      text: 'Your opening was steady. Good moves came naturally — proof that preparation lives in the body.'
+    });
+  }
+
+  // Blunder follow-up
+  for (let i = 0; i < playerMoves.length - 1; i++) {
+    if (playerMoves[i].quality === 'blunder') {
+      const next = playerMoves[i + 1];
+      if (next.quality === 'blunder' || next.quality === 'mistake') {
+        insights.push({
+          type: 'normal',
+          label: 'Pattern',
+          text: `On move ${i + 1} you blundered. The very next move was also weak. The first slip is rarely the costly one — it is the spiral that follows.`
+        });
+        break;
+      } else if (next.quality === 'excellent' || next.quality === 'good') {
+        insights.push({
+          type: 'green',
+          label: 'Resilience',
+          text: `You blundered on move ${i + 1}, then immediately played a strong reply. This is exactly the recovery we are training for.`
+        });
+        break;
+      }
+    }
+  }
+
+  // Rushed after bad move
+  for (let i = 1; i < playerMoves.length; i++) {
+    const prev = playerMoves[i - 1];
+    const curr = playerMoves[i];
+    if ((prev.quality === 'mistake' || prev.quality === 'blunder') && curr.time < 4) {
+      insights.push({
+        type: 'normal',
+        label: 'Pattern',
+        text: `After your slip on move ${i}, you replied in under ${Math.round(curr.time)} seconds. Speed after pain is the body trying to outrun the feeling. The position deserved longer.`
+      });
+      break;
+    }
+  }
+
+  // High patience
+  if (metrics.patience > 0.7) {
+    insights.push({
+      type: 'gold',
+      label: 'Strength',
+      text: 'Your pace was unhurried throughout. You let the position speak.'
+    });
+  }
+
+  // Low patience
+  if (metrics.patience < 0.3 && playerMoves.length > 10) {
+    insights.push({
+      type: 'normal',
+      label: 'Observation',
+      text: 'Most of your moves came inside a few seconds. Some positions can be solved that way. Most reward a longer look.'
+    });
+  }
+
+  // Intention reflection
+  if (STATE.intention && STATE.intention.id !== 'play') {
+    const intentionMap = {
+      patience: { metric: metrics.patience, name: 'patience' },
+      resilience: { metric: metrics.resilience, name: 'resilience' },
+      focus: { metric: metrics.focus, name: 'focus' }
+    };
+    const entry = intentionMap[STATE.intention.id];
+    if (entry) {
+      if (entry.metric > 0.6) {
+        insights.push({
+          type: 'gold',
+          label: 'Intention met',
+          text: `You came to practice ${entry.name}. The data agrees — you found it today.`
+        });
+      } else {
+        insights.push({
+          type: 'normal',
+          label: 'Intention',
+          text: `You came to practice ${entry.name}. It did not arrive today. That is also data. Try again tomorrow.`
+        });
+      }
+    }
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      type: 'normal',
+      label: 'Observation',
+      text: 'A quiet game. Neither dramatic peaks nor valleys. Steady is its own kind of strength.'
+    });
+  }
+
+  return insights.slice(0, 4);
+}
+
+function saveJournalEntry() {
+  const metrics = computeFinalMetrics();
+  const date = new Date();
+  const entry = {
+    date: date.toISOString(),
+    intention: STATE.intention ? STATE.intention.title : 'Free Play',
+    result: STATE.resultText,
+    metrics,
+    reflection: STATE.reflectionText,
+    moveCount: STATE.moveHistory.length
+  };
+  const journal = [entry, ...STORE.journal].slice(0, 100);
+  STORE = saveStorage({ journal });
+  STATE.reflectionText = '';
+  STATE.showReflection = false;
+  render();
+}
+
+// ==========================================================
+// Rendering — vanilla DOM
+// ==========================================================
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // Clean up any modals appended directly to body in previous renders
+  document.querySelectorAll('body > .onboarding-backdrop, body > .modal-backdrop, body > .pause-overlay, body > .reflection-modal').forEach(n => n.remove());
+
+  // Header
+  app.appendChild(renderHeader());
+
+  // Main view
+  if (STATE.view === 'play') app.appendChild(renderPlay());
+  else if (STATE.view === 'leaderboard') app.appendChild(renderLeaderboard());
+  else if (STATE.view === 'journal') app.appendChild(renderJournal());
+  else if (STATE.view === 'about') app.appendChild(renderAbout());
+
+  // Modals
+  if (STATE.showOnboarding && !STORE.onboarded) {
+    document.body.appendChild(renderOnboarding());
+  }
+  if (STATE.showSettings) document.body.appendChild(renderSettings());
+  if (STATE.showPause) document.body.appendChild(renderPauseOverlay());
+  if (STATE.showReflection) document.body.appendChild(renderReflectionModal());
+}
+
+function el(tag, attrs = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const k in attrs) {
+    if (k === 'class') e.className = attrs[k];
+    else if (k === 'onclick') e.onclick = attrs[k];
+    else if (k === 'oninput') e.oninput = attrs[k];
+    else if (k.startsWith('on')) e[k.toLowerCase()] = attrs[k];
+    else if (k === 'style') e.style.cssText = attrs[k];
+    else if (attrs[k] === false || attrs[k] == null) continue; // boolean attrs: skip when false/null
+    else if (attrs[k] === true) e.setAttribute(k, '');
+    else e.setAttribute(k, attrs[k]);
+  }
+  for (const c of children) {
+    if (c == null || c === false) continue;
+    if (typeof c === 'string' || typeof c === 'number') e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  }
+  return e;
+}
+
+function renderHeader() {
+  const header = el('header', {},
+    el('div', { class: 'brand' },
+      el('div', { class: 'brand-mark' }),
+      el('div', { class: 'brand-logo' }, 'Mind', el('em', {}, 'Chess'))
+    ),
+    el('nav', {},
+      el('button', { class: STATE.view === 'play' ? 'active' : '', onclick: () => { STATE.view = 'play'; render(); } }, 'Play'),
+      el('button', { class: STATE.view === 'leaderboard' ? 'active' : '', onclick: () => { STATE.view = 'leaderboard'; render(); } }, 'Leaderboard'),
+      el('button', { class: STATE.view === 'journal' ? 'active' : '', onclick: () => { STATE.view = 'journal'; render(); } }, 'Journal'),
+      el('button', { class: STATE.view === 'about' ? 'active' : '', onclick: () => { STATE.view = 'about'; render(); } }, 'About')
+    )
+  );
+  return header;
+}
+
+function renderPlay() {
+  if (!STATE.game) {
+    return renderPreGame();
+  }
+  return el('div', { class: 'main' },
+    renderBoardSection(),
+    renderSidebar()
+  );
+}
+
+function renderPreGame() {
+  return el('div', { class: 'main' },
+    el('div', { class: 'board-section' },
+      el('div', { class: 'onboarding' },
+        el('h1', {}, 'Begin a ', el('em', {}, 'practice')),
+        el('p', { class: 'tagline', style: 'font-size: 1.15rem; margin-bottom: 2.5rem; max-width: 460px; margin-left:auto; margin-right:auto;' },
+          'Choose your intention for this session. Then choose your opponent.'
+        ),
+        el('div', { class: 'intention-grid', style: 'max-width: 520px; margin: 0 auto;' },
+          ...INTENTIONS.map(int =>
+            el('button', {
+              class: 'intention-card' + (STATE.intention && STATE.intention.id === int.id ? ' selected' : ''),
+              onclick: () => { STATE.intention = int; render(); }
+            },
+              el('div', { class: 'label' }, int.label),
+              el('h4', {}, int.title),
+              el('p', {}, int.desc)
+            )
+          )
+        ),
+        el('div', { class: 'ai-level', style: 'max-width: 520px; margin: 1rem auto 2rem;' },
+          el('div', { class: 'ai-level-row' },
+            el('span', { class: 'label' }, 'Opponent'),
+            el('span', { class: 'display-italic' }, levelLabel(STATE.aiLevel))
+          ),
+          el('div', { class: 'level-options' },
+            el('button', { class: STATE.aiLevel === 'easy' ? 'active' : '', onclick: () => { STATE.aiLevel = 'easy'; render(); } }, 'Apprentice'),
+            el('button', { class: STATE.aiLevel === 'medium' ? 'active' : '', onclick: () => { STATE.aiLevel = 'medium'; render(); } }, 'Journeyman'),
+            el('button', { class: STATE.aiLevel === 'hard' ? 'active' : '', onclick: () => { STATE.aiLevel = 'hard'; render(); } }, 'Master')
+          )
+        ),
+        el('button', {
+          class: 'btn clay',
+          style: 'min-width: 240px; padding: 1rem 2rem;',
+          disabled: !STATE.intention,
+          onclick: () => { if (STATE.intention) newGame(); }
+        }, STATE.intention ? 'Begin' : 'Choose an intention')
+      )
+    )
+  );
+}
+
+function levelLabel(l) {
+  return { easy: 'Patient teacher', medium: 'Steady opponent', hard: 'Sharp opponent' }[l] || '';
+}
+
+function renderBoardSection() {
+  const section = el('div', { class: 'board-section' });
+
+  // Intention banner
+  if (STATE.intention) {
+    section.appendChild(
+      el('div', { class: 'intention-banner' },
+        el('span', {}, 'Today: practicing ', STATE.intention.title.toLowerCase()),
+        el('button', { class: 'change', onclick: () => { STATE.game = null; render(); } }, 'change')
+      )
+    );
+  }
+
+  // Board with coords
+  section.appendChild(renderBoardWithCoords());
+
+  // Status line
+  if (STATE.resultText) {
+    section.appendChild(el('div', { class: 'game-result', style: 'margin-top: 1.5rem;' }, STATE.resultText));
+  } else if (STATE.thinking) {
+    section.appendChild(el('div', { style: 'margin-top: 1.5rem; font-family: Fraunces, serif; font-style: italic; color: var(--muted); font-size: 0.95rem;' }, 'Opponent thinking…'));
+  } else {
+    const turn = STATE.game.turn();
+    section.appendChild(el('div', { style: 'margin-top: 1.5rem; font-family: Fraunces, serif; font-style: italic; color: var(--muted); font-size: 0.95rem;' },
+      turn === 'w' ? 'Your move.' : ''
+    ));
+  }
+
+  return section;
+}
+
+function renderBoardWithCoords() {
+  const wrap = el('div', { class: 'board-and-coords' });
+  const board = el('div', { class: 'board' });
+
+  const game = STATE.game;
+  const boardState = game.board();
+  const inCheck = game.in_check();
+  const checkSq = inCheck ? findKingSquare(game.turn(), boardState) : null;
+
+  for (let r = 0; r < 8; r++) {
+    for (let f = 0; f < 8; f++) {
+      const square = FILES[f] + RANKS[r];
+      const isLight = (r + f) % 2 === 0;
+      const piece = boardState[r][f];
+      const isSelected = STATE.selectedSquare === square;
+      const isLastMove = STATE.lastMove && (STATE.lastMove.from === square || STATE.lastMove.to === square);
+      const legalMove = STATE.legalMoves.find(m => m.to === square);
+      const isCheck = checkSq === square;
+
+      const sqClasses = ['square', isLight ? 'light' : 'dark'];
+      if (isSelected) sqClasses.push('selected');
+      if (isLastMove && !isSelected) sqClasses.push('last-move');
+      if (isCheck) sqClasses.push('check');
+      if (legalMove && legalMove.captured) sqClasses.push('capture');
+
+      const sqEl = el('div', {
+        class: sqClasses.join(' '),
+        onclick: () => handleSquareClick(square)
+      });
+
+      if (legalMove) {
+        sqEl.appendChild(el('div', { class: 'move-dot' }));
+      }
+
+      if (piece) {
+        const key = (piece.color === 'w' ? 'w' : 'b') + piece.type.toUpperCase();
+        sqEl.appendChild(el('div', { class: 'piece ' + (piece.color === 'w' ? 'white' : 'black') }, PIECES[key]));
+      }
+      board.appendChild(sqEl);
+    }
+  }
+
+  wrap.appendChild(board);
+
+  // Files at bottom
+  const files = el('div', { class: 'board-files' });
+  FILES.forEach(f => files.appendChild(el('span', {}, f)));
+  wrap.appendChild(files);
+
+  return wrap;
+}
+
+function findKingSquare(color, boardState) {
+  for (let r = 0; r < 8; r++) {
+    for (let f = 0; f < 8; f++) {
+      const p = boardState[r][f];
+      if (p && p.type === 'k' && p.color === color) {
+        return FILES[f] + RANKS[r];
+      }
+    }
+  }
+  return null;
+}
+
+function renderSidebar() {
+  const sidebar = el('div', { class: 'sidebar' });
+
+  // Pulse panel
+  const pulseState = pulseStateText();
+  const pulsePanel = el('div', { class: 'panel' },
+    el('div', { class: 'panel-title' },
+      el('h3', {}, 'The Pulse'),
+      el('span', { class: 'label' }, 'emotional state')
+    ),
+    el('div', { class: 'pulse-meter' },
+      el('div', { class: 'pulse-bar' },
+        el('div', { class: 'fill', style: `width: ${STATE.pulse * 100}%;` })
+      ),
+      el('div', { class: 'pulse-labels' },
+        el('span', {}, 'centered'),
+        el('span', {}, 'tilted')
+      ),
+      el('div', { class: 'pulse-state' }, pulseState.text),
+      el('div', { class: 'pulse-detail' }, pulseState.detail),
+      renderPulseSparkline()
+    )
+  );
+  sidebar.appendChild(pulsePanel);
+
+  // Move history
+  const movesPanel = el('div', { class: 'panel' },
+    el('div', { class: 'panel-title' },
+      el('h3', {}, 'Moves'),
+      el('span', { class: 'label' }, `${Math.ceil(STATE.moveHistory.length / 2)} ply`)
+    ),
+    renderMoveList()
+  );
+  sidebar.appendChild(movesPanel);
+
+  // Controls
+  const controls = el('div', { class: 'controls' },
+    el('button', { class: 'btn secondary', onclick: () => { if (confirm('Resign this game?')) { STATE.resultText = 'Resigned — Black wins'; endGame(); render(); } }, disabled: STATE.game.game_over() }, 'Resign'),
+    el('button', { class: 'btn', onclick: () => { STATE.game = null; render(); } }, 'New game')
+  );
+  sidebar.appendChild(controls);
+
+  // Pro card
+  sidebar.appendChild(renderProCard());
+
+  return sidebar;
+}
+
+function renderPulseSparkline() {
+  const history = STATE.pulseHistory.slice(-20);
+  const w = 280, h = 32;
+  if (history.length < 2) return el('div', { class: 'pulse-sparkline' });
+
+  const points = history.map((v, i) => {
+    const x = (i / (history.length - 1)) * w;
+    const y = h - v * h;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const svg = `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${points}" fill="none" stroke="var(--clay)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.8" />
+  </svg>`;
+  const wrap = el('div', { class: 'pulse-sparkline' });
+  wrap.innerHTML = svg;
+  return wrap;
+}
+
+function renderMoveList() {
+  if (STATE.moveHistory.length === 0) {
+    return el('div', { style: 'padding: 0.5rem 0; font-family: Fraunces, serif; font-style: italic; color: var(--muted); font-size: 0.85rem;' }, 'No moves yet.');
+  }
+  const list = el('div', { class: 'moves-list' });
+  for (let i = 0; i < STATE.moveHistory.length; i += 2) {
+    const num = Math.floor(i / 2) + 1;
+    const w = STATE.moveHistory[i];
+    const b = STATE.moveHistory[i + 1];
+    list.appendChild(el('div', { class: 'move-row' },
+      el('span', { class: 'num' }, num + '.'),
+      el('span', { class: 'ply' },
+        w.quality ? el('span', { class: 'move-tag ' + w.quality }) : el('span', { class: 'move-tag' }),
+        el('span', {}, w.san)
+      ),
+      b ? el('span', { class: 'ply' },
+        b.quality ? el('span', { class: 'move-tag ' + b.quality }) : el('span', { class: 'move-tag' }),
+        el('span', {}, b.san)
+      ) : el('span', {})
+    ));
+  }
+  // Auto-scroll to bottom
+  setTimeout(() => { list.scrollTop = list.scrollHeight; }, 0);
+  return list;
+}
+
+function renderProCard() {
+  return el('div', { class: 'pro-card' },
+    el('div', { class: 'label' }, 'MindChess Pro'),
+    el('h3', {}, 'Deeper ', el('em', {}, 'patterns')),
+    el('p', {}, 'Weekly emotional pattern reports. Personalized growth plans. AI coach that remembers your history.'),
+    el('button', { class: 'btn', onclick: () => alert('Stripe integration would go here. This is a demo.') }, '$8/mo — Start trial')
+  );
+}
+
+// Onboarding modal
+function renderOnboarding() {
+  return el('div', { class: 'modal-backdrop' },
+    el('div', { class: 'modal' },
+      el('div', { class: 'label' }, 'Welcome to'),
+      el('h2', {}, 'Mind', el('em', {}, 'Chess')),
+      el('p', { class: 'lede' }, 'Chess for who you become while playing it. We track composure, patience, and resilience — not just rating.'),
+      el('div', { style: 'margin: 2rem 0;' },
+        el('div', { style: 'display: grid; grid-template-columns: 40px 1fr; gap: 1rem; margin-bottom: 1.5rem;' },
+          el('div', { style: 'width: 32px; height: 32px; border-radius: 50%; background: var(--clay-soft); display: flex; align-items: center; justify-content: center; font-family: Fraunces, serif; color: white; font-size: 1.1rem;' }, '1'),
+          el('div', {},
+            el('h4', { style: 'font-family: Fraunces, serif; font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;' }, 'Set an intention.'),
+            el('p', { style: 'font-size: 0.9rem; color: var(--muted);' }, 'Patience, resilience, or focus. Or just play.')
+          )
+        ),
+        el('div', { style: 'display: grid; grid-template-columns: 40px 1fr; gap: 1rem; margin-bottom: 1.5rem;' },
+          el('div', { style: 'width: 32px; height: 32px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; font-family: Fraunces, serif; color: var(--ink); font-size: 1.1rem;' }, '2'),
+          el('div', {},
+            el('h4', { style: 'font-family: Fraunces, serif; font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;' }, 'Play. The Pulse watches.'),
+            el('p', { style: 'font-size: 0.9rem; color: var(--muted);' }, 'It reads your timing and move quality to detect tilt before you do.')
+          )
+        ),
+        el('div', { style: 'display: grid; grid-template-columns: 40px 1fr; gap: 1rem;' },
+          el('div', { style: 'width: 32px; height: 32px; border-radius: 50%; background: var(--moss); display: flex; align-items: center; justify-content: center; font-family: Fraunces, serif; color: white; font-size: 1.1rem;' }, '3'),
+          el('div', {},
+            el('h4', { style: 'font-family: Fraunces, serif; font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;' }, 'Reflect after.'),
+            el('p', { style: 'font-size: 0.9rem; color: var(--muted);' }, 'An AI coach reads the emotional shape of the game — not just the moves.')
+          )
+        )
+      ),
+      el('button', { class: 'btn clay full', style: 'padding: 1rem;', onclick: () => { STORE = saveStorage({ onboarded: true }); STATE.showOnboarding = false; render(); } }, 'Begin')
+    )
+  );
+}
+
+// Mindful pause overlay
+function renderPauseOverlay() {
+  return el('div', { class: 'pause-overlay' },
+    el('div', { class: 'breath-circle' }),
+    el('div', { class: 'pause-text' }, 'A moment of stillness'),
+    el('div', { class: 'pause-timer', id: 'pause-timer' }, `${STATE.pauseSeconds}s`),
+    el('button', { class: 'pause-skip', onclick: closeMindfulPause }, 'Continue')
+  );
+}
+
+// Reflection modal
+function renderReflectionModal() {
+  const metrics = computeFinalMetrics();
+  const insights = generateInsights(metrics);
+  const stats = STORE.stats;
+
+  return el('div', { class: 'modal-backdrop' },
+    el('div', { class: 'modal' },
+      el('button', { class: 'modal-close', onclick: () => { STATE.showReflection = false; render(); } }, '×'),
+      el('div', { class: 'label' }, 'Reflection'),
+      el('h2', {}, 'A look at what ', el('em', {}, 'happened.')),
+      el('p', { class: 'lede' }, STATE.resultText + '. ' + (STATE.intention ? `You came to practice ${STATE.intention.title.toLowerCase()}.` : 'No intention set.')),
+
+      el('div', { class: 'metric-grid' },
+        renderMetric('Patience', metrics.patience),
+        renderMetric('Resilience', metrics.resilience),
+        renderMetric('Focus', metrics.focus),
+        renderMetric('Composure', metrics.composure)
+      ),
+
+      el('div', { class: 'label', style: 'margin: 2rem 0 1rem;' }, 'Insights from your coach'),
+      ...insights.map(ins =>
+        el('div', { class: 'insight-card ' + (ins.type === 'green' ? 'green' : ins.type === 'gold' ? 'gold' : '') },
+          el('div', { class: 'label' }, ins.label),
+          el('div', { class: 'text' }, ins.text)
+        )
+      ),
+
+      el('div', { class: 'label', style: 'margin: 2rem 0 1rem;' }, 'Your reflection (optional)'),
+      el('textarea', {
+        class: 'reflection-input',
+        placeholder: 'What did you notice today? Where did your mind go? What would you carry into tomorrow?',
+        oninput: (e) => { STATE.reflectionText = e.target.value; }
+      }),
+
+      el('div', { class: 'controls', style: 'margin-top: 1.5rem;' },
+        el('button', { class: 'btn secondary', onclick: () => { STATE.showReflection = false; render(); } }, 'Skip'),
+        el('button', { class: 'btn clay', onclick: saveJournalEntry }, 'Save to journal')
+      )
+    )
+  );
+}
+
+function renderMetric(name, value) {
+  const pct = Math.round(value * 100);
+  return el('div', { class: 'metric' },
+    el('div', { class: 'label' }, name),
+    el('div', { class: 'value' }, pct, el('em', {}, '%'))
+  );
+}
+
+// Leaderboard view
+function renderLeaderboard() {
+  // Simulated city leaderboard — Almaty
+  const players = [
+    { rank: 1, name: 'Aigerim K.', composure: 89, patience: 92, rating: 1847 },
+    { rank: 2, name: 'Daniyar T.', composure: 86, patience: 81, rating: 1812 },
+    { rank: 3, name: 'Anna M.', composure: 84, patience: 88, rating: 1789 },
+    { rank: 4, name: 'Yerlan B.', composure: 81, patience: 79, rating: 1754 },
+    { rank: 5, name: 'Madina S.', composure: 78, patience: 82, rating: 1721 },
+    { rank: 6, name: 'You', composure: Math.round(STORE.stats.avgComposure * 100), patience: Math.round(STORE.stats.avgPatience * 100), rating: STORE.stats.rating, you: true },
+    { rank: 7, name: 'Timur A.', composure: 72, patience: 71, rating: 1098 },
+    { rank: 8, name: 'Aida N.', composure: 70, patience: 74, rating: 1067 }
+  ].sort((a, b) => b.rating - a.rating).map((p, i) => ({ ...p, rank: i + 1 }));
+
+  return el('div', { class: 'tab-view' },
+    el('div', { style: 'max-width: 800px; margin: 0 auto;' },
+      el('div', { class: 'label' }, 'Almaty · This week'),
+      el('h2', { style: 'font-family: Fraunces, serif; font-weight: 300; font-size: 2.8rem; margin: 0.5rem 0 0.5rem; letter-spacing: -0.02em;' }, 'The ', el('em', { style: 'font-style: italic; color: var(--clay);' }, 'composed'), ' play long.'),
+      el('p', { class: 'tagline', style: 'font-size: 1.05rem; max-width: 460px; margin-bottom: 3rem;' }, 'Rankings here weight emotional steadiness alongside raw rating. Cool heads top the table.'),
+      el('table', { class: 'lb-table' },
+        el('thead', {},
+          el('tr', {},
+            el('th', {}, ''),
+            el('th', {}, 'Player'),
+            el('th', { style: 'text-align: right;' }, 'Rating'),
+            el('th', { style: 'text-align: right;' }, 'Composure'),
+            el('th', { style: 'text-align: right;' }, 'Patience')
+          )
+        ),
+        el('tbody', {},
+          ...players.map(p =>
+            el('tr', { class: p.you ? 'you' : '' },
+              el('td', { class: 'rank' }, p.rank),
+              el('td', { class: 'name' }, p.name),
+              el('td', { class: 'num', style: 'text-align: right;' }, p.rating),
+              el('td', { class: 'num', style: 'text-align: right;' }, p.composure + '%'),
+              el('td', { class: 'num', style: 'text-align: right;' }, p.patience + '%')
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+// Journal view
+function renderJournal() {
+  if (STORE.journal.length === 0) {
+    return el('div', { class: 'tab-view' },
+      el('div', { class: 'empty-state' },
+        el('h2', {}, 'No entries yet.'),
+        el('p', {}, 'Finish a game and save a reflection. Your patterns will appear here over time — small moves toward who you want to be at the board.')
+      )
+    );
+  }
+  return el('div', { class: 'tab-view', style: 'max-width: 720px; margin: 0 auto;' },
+    el('div', { class: 'label' }, 'Your practice'),
+    el('h2', { style: 'font-family: Fraunces, serif; font-weight: 300; font-size: 2.8rem; margin: 0.5rem 0 2rem; letter-spacing: -0.02em;' }, 'The ', el('em', { style: 'font-style: italic; color: var(--clay);' }, 'journal')),
+    ...STORE.journal.map(entry => {
+      const d = new Date(entry.date);
+      const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return el('div', { class: 'journal-entry' },
+        el('div', { class: 'meta' },
+          el('span', {}, date),
+          el('span', {}, '·'),
+          el('span', {}, entry.intention),
+          el('span', {}, '·'),
+          el('span', {}, entry.result)
+        ),
+        el('h4', {}, `Composure ${Math.round(entry.metrics.composure * 100)}% · Patience ${Math.round(entry.metrics.patience * 100)}%`),
+        entry.reflection ? el('div', { class: 'body' }, '"' + entry.reflection + '"') : null
+      );
+    })
+  );
+}
+
+// About view
+function renderAbout() {
+  return el('div', { class: 'tab-view', style: 'max-width: 680px; margin: 0 auto; padding: 2rem 0;' },
+    el('div', { class: 'label' }, 'About'),
+    el('h2', { style: 'font-family: Fraunces, serif; font-weight: 300; font-size: 3rem; margin: 0.5rem 0 1rem; letter-spacing: -0.02em; line-height: 1.1;' },
+      'Chess is a ', el('em', { style: 'font-style: italic; color: var(--clay);' }, 'mirror'), '.'
+    ),
+    el('p', { style: 'font-family: Fraunces, serif; font-size: 1.2rem; line-height: 1.6; color: var(--ink-soft); margin-bottom: 1.5rem;' },
+      'For decades, chess platforms have asked the same question: how good are you? MindChess asks a different one — how present are you?'
+    ),
+    el('p', { style: 'font-family: Fraunces, serif; font-size: 1.05rem; line-height: 1.6; color: var(--muted); margin-bottom: 1.5rem;' },
+      'Every move you make leaves a trace beyond the position. The time you took. Whether you slowed down after pain or sped up. Whether you played the board, or the feeling. These traces, read carefully, are a quiet portrait of how you handle pressure anywhere.'
+    ),
+    el('p', { style: 'font-family: Fraunces, serif; font-size: 1.05rem; line-height: 1.6; color: var(--muted); margin-bottom: 2rem;' },
+      'MindChess builds that portrait. We measure composure, patience, resilience, focus. We notice when you tilt before you notice yourself. We help you build the habit of returning to center — at the board, and afterward.'
+    ),
+    el('div', { class: 'label', style: 'margin-top: 3rem;' }, 'Built for'),
+    el('h3', { style: 'font-family: Fraunces, serif; font-weight: 400; font-size: 1.5rem; margin: 0.5rem 0 1rem;' }, 'High-stakes minds.'),
+    el('p', { style: 'font-family: Fraunces, serif; font-size: 1rem; line-height: 1.6; color: var(--muted);' },
+      'Founders. Traders. Engineers preparing for interviews. Therapists working on their own equilibrium. Anyone who plays — and needs to play well under stress that has nothing to do with sixty-four squares.'
+    )
+  );
+}
+
+function renderSettings() {
+  return el('div', { class: 'modal-backdrop', onclick: (e) => { if (e.target.className === 'modal-backdrop') { STATE.showSettings = false; render(); } } },
+    el('div', { class: 'modal' },
+      el('button', { class: 'modal-close', onclick: () => { STATE.showSettings = false; render(); } }, '×'),
+      el('div', { class: 'label' }, 'Settings'),
+      el('h2', {}, 'Your ', el('em', {}, 'practice.')),
+      el('div', { style: 'margin-top: 2rem;' },
+        el('p', { style: 'color: var(--muted); margin-bottom: 1rem;' }, 'All data is stored locally on your device.'),
+        el('button', { class: 'btn secondary full', onclick: () => {
+          if (confirm('Reset all stats, games, and reflections?')) {
+            localStorage.removeItem(STORAGE_KEY);
+            STORE = loadStorage();
+            STATE.showSettings = false;
+            STATE.showOnboarding = true;
+            render();
+          }
+        }}, 'Reset all data')
+      )
+    )
+  );
+}
+
+// ==========================================================
+// Initialize
+// ==========================================================
+window.addEventListener('DOMContentLoaded', () => {
+  STATE.showOnboarding = !STORE.onboarded;
+  render();
+});
+
+// In case chess.js is loaded after DOM is ready
+if (document.readyState !== 'loading') {
+  STATE.showOnboarding = !STORE.onboarded;
+  render();
+}
+</script>
+
+</body>
+</html>
